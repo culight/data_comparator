@@ -26,7 +26,7 @@ class Dataset:
 
     def __init__(self, data_src):
         if not data_src:
-            logging.error('reference to data source is missing or invalid')
+            logging.error('Reference to data source is missing or invalid')
         try:
             # probably a path string
             self.path = Path(data_src)
@@ -59,9 +59,9 @@ class Dataset:
                 abs_path = os.path.join(data_src, file)
                 size += os.path.getsize(abs_path)
         else:
-            size = os.path.getsize(data_src) >> 20
+            size = os.path.getsize(data_src)
         if size < 1:
-            logging.error('file is too small')
+            logging.error(size)
         return size
 
     def load_data_frompath(self, path, type):
@@ -98,9 +98,6 @@ class Dataset:
             if re.search(r'(bool)', str(raw_column.dtype)):
                 self.columns[raw_col_name] = BoolColumn(raw_column)
 
-class Comparison:
-    def __init__(self, column):
-        pass
 
 class Column:
     name = ''
@@ -108,19 +105,25 @@ class Column:
     invalid = 0
     missing = 0
     type = ''
+    data = None
 
     def __init__(self, raw_column):
         self.name = raw_column.name
         self.type = raw_column.dtype
         self.count = raw_column.count()
-        self.mising = raw_column.isnull().sum()
+        self.missing = raw_column.isnull().sum()
+        self.data = raw_column
 
 class StringColumn(Column):
     duplicates = 0
     unique = 0
+    text_length_mean = 0
+    text_length_std = 0
 
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
+        self.text_length_mean = raw_column.str.len().mean()
+        self.text_length_std = raw_column.str.len().std()
 
 class NumericColumn(Column):
     zeros = 0
@@ -130,6 +133,9 @@ class NumericColumn(Column):
 
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
+        self.min = raw_column.min()
+        self.max = raw_column.max()
+        self.std = raw_column.std()
 
 class TemporalColumn(Column):
     unique = 0
