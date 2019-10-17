@@ -7,8 +7,8 @@
 ### DEVELOPER NOTES:
 """
 # pylint: disable=no-member
-from models import Dataset
 import os
+from models.dataset import Dataset
 
 def main():
     return 0

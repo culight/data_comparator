@@ -149,3 +149,10 @@ class BoolColumn(Column):
 
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
+
+
+from pyspark.sql import *
+
+raptors_modrn_path = r"H:\repos\data-comparator\tests\test_data\nba-raptor\modern_RAPTOR_by_player.csv"
+
+spark = SparkSession.builder.appName('test').getOrCreate()

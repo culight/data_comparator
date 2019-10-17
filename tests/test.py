@@ -1,14 +1,14 @@
 import pandas as pd
-from models import Dataset, Comparison
+from models.dataset import Dataset
 
 # import sample dataset
-raptors_hist_path = r"H:\repos\data-comparator\test_data\nba-raptor\historical_RAPTOR_by_player.csv"
-raptors_modrn_path = r"H:\repos\data-comparator\test_data\nba-raptor\modern_RAPTOR_by_player.csv"
-raptors_hist_dataset = Dataset(raptors_hist_path)
-raptors_modrn_dataset = Dataset(raptors_modrn_path)
+raptors_hist_path = r"H:\repos\data-comparator\tests\test_data\nba-raptor\historical_RAPTOR_by_player.csv"
+raptors_modrn_path = r"H:\repos\data-comparator\tests\test_data\nba-raptor\modern_RAPTOR_by_player.csv"
+ds_hist = Dataset(raptors_hist_path)
+ds_modrn = Dataset(raptors_modrn_path)
 
-raptors_hist_dataset.prepare_columns()
-raptors_modrn_dataset.prepare_columns()
+ds_hist.prepare_columns()
+ds_modrn.prepare_columns()
 
 raptors_hist_dataset.columns
 raptors_modrn_dataset.columns
