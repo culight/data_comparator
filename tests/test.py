@@ -1,5 +1,4 @@
 import pandas as pd
-from models.dataset import Dataset
 
 # import sample dataset
 raptors_hist_path = r"H:\repos\data-comparator\tests\test_data\nba-raptor\historical_RAPTOR_by_player.csv"
