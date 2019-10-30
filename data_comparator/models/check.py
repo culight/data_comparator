@@ -6,21 +6,30 @@
 
 ### DEVELOPER NOTES:
 """
-import sys
-import pandas as pd
-from dataset import Dataset
 
-string_checks = {
-    'white_space': False,
-    'capitalized': False,
-    'empty_text': False,
-    'odd_text_length_diff': False,
-    'missing_text': False
-}
+def check_string_column(column):
+    rows = column.data
+    string_checks = {
+        'white_space': False,
+        'capitalized': False,
+        'empty_text': False,
+        'numeric_data': False,
+        'odd_text_length_diff': False,
+        'missing_text': False
+    }
 
-def report_string_warnings(column):
-    data = column.data
-    for index, content in data.iteritems():
+    for index, row_content in rows.iteritems():
+        # check for numeric data
+        try:
+            int(row_content)
+            string_checks['numeric_data'] = True
+        except:
+            try:
+                float(row_content)
+                string_checks['numeric_data'] = True
+            except:
+                continue
+            continue
         # white space
         if not string_checks['white_space']:
             if row_content != row_content.strip():
@@ -36,14 +45,21 @@ def report_string_warnings(column):
         # suspicious difference in text lenght
         if not string_checks['odd_text_length_diff']:
             if len(row_content) > (2 * column.text_length_std):
-                string_checks['odd_text_length_diff'] = False
+                string_checks['odd_text_length_diff'] = True
     # missing values
     if column.missing > 0:
         string_checks['missing_text'] = True
 
+    return string_checks
 
-data_path = r"H:\repos\data-comparator\test_data\nba-raptor\modern_RAPTOR_by_player.csv"
-ds = Dataset(data_path)
-ds.prepare_columns()
-col = ds.columns['player_name']
-data = col.data
+
+def check_numeric_column(column):
+    pass
+
+
+def check_temporal_column(column):
+    pass
+
+
+def check_boolean_column(columns):
+    pass

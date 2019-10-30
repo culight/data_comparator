@@ -19,37 +19,34 @@ ACCEPTED_DATA_TYPES = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas']
 
 class Dataset:
     path = None
-    type = ''
+    data_type = ''
     size = ''
     dataframe = None
     columns = {}
+    name = ''
 
-    def __init__(self, data_src):
-        if not data_src:
-            logging.error('Reference to data source is missing or invalid')
+    def __init__(self, data_src, name):
+        self.name = name
         try:
             # probably a path string
             self.path = Path(data_src)
-            self.type = self._get_data_type()
+            self.data_type = self._get_data_type()
             self.size = self._get_data_size(data_src)
-            self.dataframe = self.load_data_frompath(
-                self.path,
-                self.type
-            )
+            self.dataframe = self.load_data_frompath()
         except TypeError:
             # probably an dataframe object
-            type = data_src.split('.')[0]
-            if type in ['pyspark', 'pandas']:
+            self.data_type = str(data_src.__class__)
+            if 'DataFrame' in self.data_type:
                 self.dataframe = self.load_data_fromdf(
-                    self.path,
-                    self.type
+                    data_src
                 )
-                self.size = self.dataframe.size
+                # count object types in size
+                self.size = self.dataframe.memory_usage(deep=True).sum()
 
     def _get_data_type(self):
         suffix = self.path.suffix.replace('.', '')
         if suffix not in ACCEPTED_DATA_TYPES:
-            logging.error('file type not supported')
+            logging.error('File type not supported')
         return suffix
 
     def _get_data_size(self, data_src):
@@ -64,21 +61,23 @@ class Dataset:
             logging.error(size)
         return size
 
-    def load_data_frompath(self, path, type):
-        if type == 'sas7bdat':
-            data = pd.read_sas(str(path))
-        elif type == 'csv':
-            data = pd.read_csv(str(path))
-        elif type == 'parquet':
-            data = pd.read_parquet(str(path))
+    def load_data_frompath(self):
+        data = None
+        if self.data_type == 'sas7bdat':
+            data = pd.read_sas(str(self.path))
+        elif self.data_type == 'csv':
+            data = pd.read_csv(str(self.path))
+        elif self.data_type == 'parquet':
+            data = pd.read_parquet(str(self.path))
         else:
             logging.error('path type not recognized')
         return data
 
-    def load_data_fromdf(self, df, type):
-        if type == 'pyspark':
-            data = df.to_pandas(df)
-        elif type == 'pandas':
+    def load_data_fromdf(self, df):
+        data = None
+        if 'pyspark' in self.data_type:
+            data = df.toPandas()
+        elif 'pandas' in self.data_type:
             data = df
         else:
             logging.error('object type not recognized')
@@ -96,7 +95,7 @@ class Dataset:
             if re.search(r'(time)', str(raw_column.dtype)):
                 self.columns[raw_col_name] = TemporalColumn(raw_column)
             if re.search(r'(bool)', str(raw_column.dtype)):
-                self.columns[raw_col_name] = BoolColumn(raw_column)
+                self.columns[raw_col_name] = BooleanColumn(raw_column)
 
 
 class Column:
@@ -104,15 +103,19 @@ class Column:
     count = 0
     invalid = 0
     missing = 0
-    type = ''
     data = None
+    this_class = None
 
     def __init__(self, raw_column):
         self.name = raw_column.name
-        self.type = raw_column.dtype
         self.count = raw_column.count()
         self.missing = raw_column.isnull().sum()
         self.data = raw_column
+        self.this_class = self.__class__
+
+    def __eq__(self, other_col):
+        return other_col.__class__ == self.__class__
+
 
 class StringColumn(Column):
     duplicates = 0
@@ -124,6 +127,7 @@ class StringColumn(Column):
         Column.__init__(self, raw_column)
         self.text_length_mean = raw_column.str.len().mean()
         self.text_length_std = raw_column.str.len().std()
+
 
 class NumericColumn(Column):
     zeros = 0
@@ -145,14 +149,7 @@ class TemporalColumn(Column):
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
 
-class BoolColumn(Column):
+class BooleanColumn(Column):
 
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
-
-
-from pyspark.sql import *
-
-raptors_modrn_path = r"H:\repos\data-comparator\tests\test_data\nba-raptor\modern_RAPTOR_by_player.csv"
-
-spark = SparkSession.builder.appName('test').getOrCreate()

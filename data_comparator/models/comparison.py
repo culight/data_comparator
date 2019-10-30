@@ -6,6 +6,8 @@
 
 ### DEVELOPER NOTES:
 """
+from models.dataset import Dataset
+
 class Comparison:
     col_a = None
     col_b = None

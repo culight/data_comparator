@@ -1,4 +1,5 @@
 import pandas as pd
+from models.dataset import Dataset
 
 # import sample dataset
 raptors_hist_path = r"H:\repos\data-comparator\tests\test_data\nba-raptor\historical_RAPTOR_by_player.csv"
@@ -23,3 +24,12 @@ col_b.min
 
 comp1 = Comparison(col_a, col_b)
 comp1
+
+raptors_modrn_path = r"H:\repos\data-comparator\tests\test_data\nba-raptor\modern_RAPTOR_by_player.csv"
+from pyspark.sql import SparkSession
+sparkapp = SparkSession.builder.appName('test_df').master('local').getOrCreate()
+raptors_spk_df = sparkapp.read.csv(raptors_modrn_path, header=False)
+raptors_spk_ds = Dataset(raptors_df)
+
+raptors_pd_df = pd.read_csv(raptors_modrn_path, index_col=False)
+raptors_pd_ds = Dataset(raptors_pd_df)
