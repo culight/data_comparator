@@ -10,8 +10,8 @@ import logging
 import os
 from pathlib import Path
 import re
-
 import pandas as pd
+import models.check
 
 logging.basicConfig(format='%(asctime)s - %(message)s')
 
@@ -104,14 +104,12 @@ class Column:
     invalid = 0
     missing = 0
     data = None
-    this_class = None
 
     def __init__(self, raw_column):
         self.name = raw_column.name
         self.count = raw_column.count()
         self.missing = raw_column.isnull().sum()
         self.data = raw_column
-        self.this_class = self.__class__
 
     def __eq__(self, other_col):
         return other_col.__class__ == self.__class__
@@ -128,6 +126,9 @@ class StringColumn(Column):
         self.text_length_mean = raw_column.str.len().mean()
         self.text_length_std = raw_column.str.len().std()
 
+    def perform_column_check():
+        return check.check_string_column(self)
+
 
 class NumericColumn(Column):
     zeros = 0
@@ -141,6 +142,9 @@ class NumericColumn(Column):
         self.max = raw_column.max()
         self.std = raw_column.std()
 
+    def perform_column_check():
+        return check.check_numeric_column(self)
+
 class TemporalColumn(Column):
     unique = 0
     max = None
@@ -149,7 +153,13 @@ class TemporalColumn(Column):
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
 
+    def perform_column_check():
+        return check.check_temporal_column(self)
+
 class BooleanColumn(Column):
 
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
+
+    def perform_column_check():
+        return check.check_boolean_column(self)

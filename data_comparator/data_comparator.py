@@ -10,51 +10,73 @@
 import logging
 import os
 from models.dataset import Dataset
-import models.check
 
 logging.basicConfig(format='%(asctime)s - %(message)s')
 
 datasets = {}
-
-
-def perform_column_checks():
-    for dataset in datasets.values:
-        if dataset:
-            for column in dataset.columns:
-                pass
+columns = {}
 
 def load(
-    src1,
-    src2=None,
-    src1_name='data_source_1',
-    src2_name='data_source_2'
+    *data_sources,
+    data_source_names=None
 ):
+    """
+    Load a single data source to add to the set of active datasets
+    Parameters:
+        data_source: Object in the form of a csv, parquet, or sas path... or
+        spark/pandas dataframe
+        data_source_name: Custom name for the resulting dataset. Default will
+        be provided if null
+    Output:
+        Resulting dataset
+    """
     global datasets
 
-    logging.info('Loading data sources...')
-    dataset_1 = Dataset(src1, src1_name)
-    dataset_1.prepare_columns()
-    datasets[src1_name] = dataset_1
+    for i, src in enumerate(data_sources):
 
-    if src2:
-        dataset_2 = Dataset(src2, src2_name)
-        dataset_2.prepare_columns()
-        datasets[src2_name] = dataset_2
+        if data_source_names:
+            try:
+                src_name = data_source_names[i]
+            except IndexError:
+                logging.error(
+                    'Number of names must match number of data sources'
+                )
+        else:
+            src_name = 'dataset_' + str(i)
+
+        logging.info(
+            "Creating dataset {} from source {}...".format(src_name, src)
+        )
+
+        dataset = Dataset(src, src_name)
+        dataset.prepare_columns()
+        datasets[src_name] = dataset
+
+        for column in dataset.columns:
+            columns[column.__class__.__name__] = column
 
     return datasets
 
+def compare(col_a, col_b):
+    col_a
+
 def clear():
+    """Removes all active datasets"""
+    logging.info("Clearing all active datasets...")
     global datasets
     datasets = {}
 
 def remove(src_name):
+    """
+    Removes the specified dataset from active datasets
+    Parameters:
+        src_name: Name of dataset to remove
+    """
     try:
+        logging.info('Removing {}'.format(src_name))
         del datasets[src_name]
     except NameError:
         logging.error('Could not find dataset {}'.format(src_name))
-
-def compare():
-    pass
 
 def main():
     return 0

@@ -7,6 +7,8 @@
 ### DEVELOPER NOTES:
 """
 
+import logging
+
 def check_string_column(column):
     rows = column.data
     string_checks = {
@@ -21,14 +23,9 @@ def check_string_column(column):
     for index, row_content in rows.iteritems():
         # check for numeric data
         try:
-            int(row_content)
+            float(row_content)
             string_checks['numeric_data'] = True
         except:
-            try:
-                float(row_content)
-                string_checks['numeric_data'] = True
-            except:
-                continue
             continue
         # white space
         if not string_checks['white_space']:
@@ -36,6 +33,7 @@ def check_string_column(column):
                 string_checks['white_space'] = True
         # all caps
         if not string_checks['capitalized']:
+            logging.info('check for cap')
             if row_content == row_content.upper():
                 string_checks['capitalized'] = True
         # empty text
