@@ -11,15 +11,17 @@ import os
 from pathlib import Path
 import re
 import pandas as pd
-import models.check
+from models.check import check_string_column, check_numeric_column, \
+    check_boolean_column, check_temporal_column
 
 logging.basicConfig(format='%(asctime)s - %(message)s')
 
-ACCEPTED_DATA_TYPES = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas']
+ACCEPTED_INPUT_FORMATS = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas']
+
 
 class Dataset:
     path = None
-    data_type = ''
+    input_format = ''
     size = ''
     dataframe = None
     columns = {}
@@ -30,22 +32,22 @@ class Dataset:
         try:
             # probably a path string
             self.path = Path(data_src)
-            self.data_type = self._get_data_type()
+            self.input_format = self._get_input_format()
             self.size = self._get_data_size(data_src)
             self.dataframe = self.load_data_frompath()
         except TypeError:
             # probably an dataframe object
-            self.data_type = str(data_src.__class__)
-            if 'DataFrame' in self.data_type:
+            self.input_format = str(data_src.__class__)
+            if 'DataFrame' in self.input_format:
                 self.dataframe = self.load_data_fromdf(
                     data_src
                 )
                 # count object types in size
                 self.size = self.dataframe.memory_usage(deep=True).sum()
 
-    def _get_data_type(self):
+    def _get_input_format(self):
         suffix = self.path.suffix.replace('.', '')
-        if suffix not in ACCEPTED_DATA_TYPES:
+        if suffix not in ACCEPTED_INPUT_FORMATS:
             logging.error('File type not supported')
         return suffix
 
@@ -63,11 +65,11 @@ class Dataset:
 
     def load_data_frompath(self):
         data = None
-        if self.data_type == 'sas7bdat':
+        if self.input_format == 'sas7bdat':
             data = pd.read_sas(str(self.path))
-        elif self.data_type == 'csv':
+        elif self.input_format == 'csv':
             data = pd.read_csv(str(self.path))
-        elif self.data_type == 'parquet':
+        elif self.input_format == 'parquet':
             data = pd.read_parquet(str(self.path))
         else:
             logging.error('path type not recognized')
@@ -75,9 +77,9 @@ class Dataset:
 
     def load_data_fromdf(self, df):
         data = None
-        if 'pyspark' in self.data_type:
+        if 'pyspark' in self.input_format:
             data = df.toPandas()
-        elif 'pandas' in self.data_type:
+        elif 'pandas' in self.input_format:
             data = df
         else:
             logging.error('object type not recognized')
@@ -96,70 +98,116 @@ class Dataset:
                 self.columns[raw_col_name] = TemporalColumn(raw_column)
             if re.search(r'(bool)', str(raw_column.dtype)):
                 self.columns[raw_col_name] = BooleanColumn(raw_column)
-
+            
 
 class Column:
+    data = None
     name = ''
     count = 0
     invalid = 0
     missing = 0
-    data = None
 
     def __init__(self, raw_column):
         self.name = raw_column.name
         self.count = raw_column.count()
         self.missing = raw_column.isnull().sum()
         self.data = raw_column
-
+        
     def __eq__(self, other_col):
         return other_col.__class__ == self.__class__
 
 
 class StringColumn(Column):
+    data_type = ''
     duplicates = 0
     unique = 0
     text_length_mean = 0
     text_length_std = 0
+    summary = {}
 
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
+        self.data_type = self.__class__.__name__
         self.text_length_mean = raw_column.str.len().mean()
         self.text_length_std = raw_column.str.len().std()
+        self.unique = raw_column.nunique()
+        self.duplicates = self.count - self.unique
+
+    def get_summary(self):
+        summary = {
+            'name': self.name, 'count': self.count, 'missing': self.missing, \
+            'data_type': self.data_type, 'text_length_mean': self.text_length_mean, \
+            'text_length_std': self.text_length_std, 'unique': self.unique, \
+            'duplicates': self.duplicates
+        }
+        return summary
 
     def perform_column_check():
-        return check.check_string_column(self)
+        return check_string_column(self)
 
 
 class NumericColumn(Column):
+    data_type = ''
+    max = 0.0,
+    min = 0.0,
+    std = 0.0,
+    mean = 0.0,
     zeros = 0
-    max = 0
-    min = 0
-    std = 0
+    summary = {}
 
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
+        self.data_type = self.__class__.__name__
         self.min = raw_column.min()
         self.max = raw_column.max()
         self.std = raw_column.std()
+        self.mean = raw_column.mean()
+        self.zeros = (raw_column == 0).sum()
+        
+    def get_summary(self):
+        summary = {}
+        summary['name'] = self.name
+        summary['count'] = self.count
+        summary['missing'] = self.missing
+        summary['data_type'] = self.data_type
+        summary['min'] = self.min
+        summary['max'] = self.max
+        summary['std'] = self.std
+        summary['mean'] = self.mean
+        summary['zeros'] = self.zeros
+        return summary
 
     def perform_column_check():
-        return check.check_numeric_column(self)
+        return check_numeric_column(self)
+
 
 class TemporalColumn(Column):
-    unique = 0
-    max = None
-    min = None
+    
 
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
+       
+    
+    def get_summary(self):
+        summary = {}
+        summary['data_type'] = self.__class__.__name__
+        summary['min'] = None
+        summary['max'] = None
+        summary['unique'] = 0
+        return summary
 
     def perform_column_check():
-        return check.check_temporal_column(self)
+        return check_temporal_column(self)
+
 
 class BooleanColumn(Column):
-
+    
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
+        
+    def get_summary(self):
+        summary = {}
+        summary['data_type'] = self.__class__.__name__
 
     def perform_column_check():
-        return check.check_boolean_column(self)
+        return check_boolean_column(self)
