@@ -48,7 +48,7 @@ class Dataset:
     def _get_input_format(self):
         suffix = self.path.suffix.replace('.', '')
         if suffix not in ACCEPTED_INPUT_FORMATS:
-            logging.error('File type not supported')
+            raise ValueError('File type not supported')
         return suffix
 
     def _get_data_size(self, data_src):
@@ -59,8 +59,12 @@ class Dataset:
                 size += os.path.getsize(abs_path)
         else:
             size = os.path.getsize(data_src)
+
         if size < 1:
-            logging.error(size)
+            raise ValueError('File size of {} is too small'.format(size))
+        if size > 800000000:
+            raise ValueError('File size of {} is too large'.format(size))
+
         return size
 
     def load_data_frompath(self):
@@ -72,7 +76,8 @@ class Dataset:
         elif self.input_format == 'parquet':
             data = pd.read_parquet(str(self.path))
         else:
-            logging.error('path type not recognized')
+            raise ValueError('path type {} not recognized'.format(self.input_format))
+
         return data
 
     def load_data_fromdf(self, df):
@@ -82,10 +87,12 @@ class Dataset:
         elif 'pandas' in self.input_format:
             data = df
         else:
-            logging.error('object type not recognized')
+            raise ValueError('object type not recognized')
         return data
 
     def prepare_columns(self):
+        if  len(self.dataframe.columns) == 0:
+            raise TypeError('No columns found for this dataframe')
         for raw_col_name in self.dataframe.columns:
             raw_column = self.dataframe[raw_col_name]
             if re.search(r'(int)', str(raw_column.dtype)):
@@ -98,7 +105,7 @@ class Dataset:
                 self.columns[raw_col_name] = TemporalColumn(raw_column)
             if re.search(r'(bool)', str(raw_column.dtype)):
                 self.columns[raw_col_name] = BooleanColumn(raw_column)
-            
+   
 
 class Column:
     data = None
@@ -142,7 +149,7 @@ class StringColumn(Column):
         }
         return summary
 
-    def perform_column_check():
+    def perform_column_check(self):
         return check_string_column(self)
 
 
@@ -163,7 +170,7 @@ class NumericColumn(Column):
         self.std = raw_column.std()
         self.mean = raw_column.mean()
         self.zeros = (raw_column == 0).sum()
-        
+
     def get_summary(self):
         summary = {}
         summary['name'] = self.name
@@ -177,17 +184,15 @@ class NumericColumn(Column):
         summary['zeros'] = self.zeros
         return summary
 
-    def perform_column_check():
+    def perform_column_check(self):
         return check_numeric_column(self)
 
 
 class TemporalColumn(Column):
-    
-
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
-       
-    
+
+
     def get_summary(self):
         summary = {}
         summary['data_type'] = self.__class__.__name__
@@ -196,18 +201,17 @@ class TemporalColumn(Column):
         summary['unique'] = 0
         return summary
 
-    def perform_column_check():
+    def perform_column_check(self):
         return check_temporal_column(self)
 
 
 class BooleanColumn(Column):
-    
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
-        
+ 
     def get_summary(self):
         summary = {}
         summary['data_type'] = self.__class__.__name__
 
-    def perform_column_check():
+    def perform_column_check(self):
         return check_boolean_column(self)
