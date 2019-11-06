@@ -17,7 +17,7 @@ logging.basicConfig(format='%(asctime)s - %(message)s')
 
 _DATASETS = {}
 _COMPARISONS = {}
-_COMPARE_DF = None
+_COMP_DF_DICT = {}
 
 
 def add_dataset(
@@ -176,14 +176,17 @@ def clear_all():
 
 
 def compare():
-    _COMPARE_DF = pd.DataFrame([{
-        comp.col1.name: comp.col1.summary,
-        comp.col2.name: comp.col2.summary
-    } for comp in _COMPARISONS.items()])
+    for comp in _COMPARISONS.values():
+        data = {
+            comp.col1.name: list(comp.col1.get_summary().values()),
+            comp.col2.name: list(comp.col2.get_summary().values())
+        }
+        df = pd.DataFrame(data, index=list(comp.col1.get_summary().keys()))
+        _COMP_DF_DICT[comp.name] = df
 
 
-def view_results():
-    print(_COMPARE_DF)
+def view(comp_name):
+    print(_COMP_DF_DICT[comp_name])
 
 
 def main():

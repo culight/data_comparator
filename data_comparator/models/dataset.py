@@ -68,6 +68,7 @@ class Dataset:
         return size
 
     def load_data_frompath(self):
+        print('Loading raw data into dataset object...')
         data = None
         if self.input_format == 'sas7bdat':
             data = pd.read_sas(str(self.path))
@@ -81,6 +82,7 @@ class Dataset:
         return data
 
     def load_data_fromdf(self, df):
+        print('Loading raw data into dataset object...')
         data = None
         if 'pyspark' in self.input_format:
             data = df.toPandas()
@@ -91,6 +93,7 @@ class Dataset:
         return data
 
     def prepare_columns(self):
+        print("Preparing columns...")
         if  len(self.dataframe.columns) == 0:
             raise TypeError('No columns found for this dataframe')
         for raw_col_name in self.dataframe.columns:
@@ -119,7 +122,7 @@ class Column:
         self.count = raw_column.count()
         self.missing = raw_column.isnull().sum()
         self.data = raw_column
-        
+  
     def __eq__(self, other_col):
         return other_col.__class__ == self.__class__
 
