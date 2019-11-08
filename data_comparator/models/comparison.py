@@ -14,7 +14,6 @@ class Comparison:
     col1 = None
     col2 = None
     name = ''
-    compare_df = pd.DataFrame()
 
     def __init__(self, col1, col2):
         
@@ -36,16 +35,4 @@ class Comparison:
         self.col1 = col1
         self.col2 = col2
         self.name = col1.name + '-' + col2.name
-        
-    def compare(self):
-        summary1 = self.col1.get_summary()
-        summary2 = self.col2.get_summary()
-        self.compare_df = pd.DataFrame([summary1, summary2])
-    
-    def show_result(self):
-        if not self.compare_df.empty:
-            print(self.compare_df)
-        else:
-            print('ERROR: No comparison results have been found')
-            return
     

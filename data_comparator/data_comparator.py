@@ -18,6 +18,7 @@ logging.basicConfig(format='%(asctime)s - %(message)s')
 _DATASETS = {}
 _COMPARISONS = {}
 _COMP_DF_DICT = {}
+_PROFILE = {}
 
 
 def add_dataset(
@@ -113,6 +114,42 @@ def remove_dataset(src_name):
         print('ERROR: Could not find dataset {}'.format(src_name))
 
 
+def add_comparison(dataset1, dataset2, col_pair):
+    assert dataset1 and isinstance(dataset1.__class__, Dataset.__class__), \
+        'ERROR: At least one valid dataset must be provided'
+    assert not isinstance(dataset2, tuple), \
+        'ERROR: Must enter a second dataset. \
+            If only one dataset is needed, enter "None" for the second'
+    assert col_pair, 'ERROR: At least one column pair must be provided for comparison'
+
+    ds1 = None
+    ds2 = None
+    col1 = None
+    col2 = None
+
+    ds1 = dataset1
+    ds2 = dataset2 if dataset2 else dataset1
+
+    assert isinstance(col_pair, tuple) and len(col_pair) == 2, \
+            'ERROR: Column pairing must be presented as a tuple of two columns to be compared'
+
+    if col_pair[0] in ds1.columns:
+        col1 = ds1.columns[col_pair[0]]
+    else:
+        print('ERROR: {} is not a column in {}'.format(col_pair[0], ds1.name))
+        return
+    if col_pair[1] in ds2.columns:
+        col2 = ds2.columns[col_pair[1]]
+    else:
+        print('ERROR: {} is not a column in {}'.format(col_pair[1], ds2.name))
+        return
+    
+    comp = Comparison(col1, col2)
+    _COMPARISONS[comp.name] = comp
+
+    return comp
+
+
 def add_comparisons(dataset1, dataset2, *col_pairs):
     assert dataset1 and isinstance(dataset1.__class__, Dataset.__class__), \
         'ERROR: At least one valid dataset must be provided'
@@ -148,6 +185,21 @@ def add_comparisons(dataset1, dataset2, *col_pairs):
         _COMPARISONS[comp.name] = comp
 
     return _COMPARISONS
+
+
+def profile(dataset, col_list):
+    assert dataset and isinstance(dataset.__class__, Dataset.__class__), \
+        'ERROR: At least one valid dataset must be provided'
+    assert columns and isintance(columns, list), \
+        'ERROR: Columns must be provided in a list format'
+
+    _PROFILE = {}
+    if '*' in columns:
+        for col in dataset.columns:
+            comp = Comparison(col1, col2)
+
+
+    
 
 
 def clear_comparisons():

@@ -133,7 +133,7 @@ class StringColumn(Column):
     unique = 0
     text_length_mean = 0
     text_length_std = 0
-    summary = {}
+    top = ''
 
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
@@ -163,7 +163,6 @@ class NumericColumn(Column):
     std = 0.0,
     mean = 0.0,
     zeros = 0
-    summary = {}
 
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
@@ -192,9 +191,13 @@ class NumericColumn(Column):
 
 
 class TemporalColumn(Column):
+    data_type = ''
+    min = None
+    max = None
+    unique = 0
+
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
-
 
     def get_summary(self):
         summary = {}
@@ -209,6 +212,9 @@ class TemporalColumn(Column):
 
 
 class BooleanColumn(Column):
+    data_type = ''
+    top = ''
+    
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
  
