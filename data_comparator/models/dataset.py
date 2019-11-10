@@ -16,18 +16,17 @@ from models.check import check_string_column, check_numeric_column, \
 
 logging.basicConfig(format='%(asctime)s - %(message)s')
 
-ACCEPTED_INPUT_FORMATS = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas']
+ACCEPTED_INPUT_FORMATS = ['sashdat', 'sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas']
 
 
 class Dataset:
-    path = None
-    input_format = ''
-    size = ''
-    dataframe = None
-    columns = {}
-    name = ''
 
     def __init__(self, data_src, name):
+        self.path = None
+        self.input_format = ''
+        self.size = ''
+        self.dataframe = None
+        self.columns = {}
         self.name = name
         try:
             # probably a path string
@@ -68,7 +67,7 @@ class Dataset:
         return size
 
     def load_data_frompath(self):
-        print('Loading raw data into dataset object...')
+        print('\nLoading raw data into dataset object...')
         data = None
         if self.input_format == 'sas7bdat':
             data = pd.read_sas(str(self.path))
@@ -77,12 +76,12 @@ class Dataset:
         elif self.input_format == 'parquet':
             data = pd.read_parquet(str(self.path))
         else:
-            raise ValueError('path type {} not recognized'.format(self.input_format))
+            raise ValueError('Path type {} not recognized'.format(self.input_format))
 
         return data
 
     def load_data_fromdf(self, df):
-        print('Loading raw data into dataset object...')
+        print('\nLoading raw data into dataset object...')
         data = None
         if 'pyspark' in self.input_format:
             data = df.toPandas()
@@ -93,7 +92,7 @@ class Dataset:
         return data
 
     def prepare_columns(self):
-        print("Preparing columns...")
+        print("\nPreparing columns...")
         if  len(self.dataframe.columns) == 0:
             raise TypeError('No columns found for this dataframe')
         for raw_col_name in self.dataframe.columns:
@@ -111,59 +110,42 @@ class Dataset:
    
 
 class Column:
-    data = None
-    name = ''
-    count = 0
-    invalid = 0
-    missing = 0
-
     def __init__(self, raw_column):
         self.name = raw_column.name
         self.count = raw_column.count()
         self.missing = raw_column.isnull().sum()
         self.data = raw_column
+        self.invalid = 0
   
     def __eq__(self, other_col):
         return other_col.__class__ == self.__class__
 
 
 class StringColumn(Column):
-    data_type = ''
-    duplicates = 0
-    unique = 0
-    text_length_mean = 0
-    text_length_std = 0
-    top = ''
-
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
         self.data_type = self.__class__.__name__
         self.text_length_mean = raw_column.str.len().mean()
         self.text_length_std = raw_column.str.len().std()
+        self.text_length_med = raw_column.str.len().median()
         self.unique = raw_column.nunique()
         self.duplicates = self.count - self.unique
+        self.top = raw_column.value_counts().idxmax()
 
     def get_summary(self):
         summary = {
             'name': self.name, 'count': self.count, 'missing': self.missing, \
             'data_type': self.data_type, 'text_length_mean': self.text_length_mean, \
             'text_length_std': self.text_length_std, 'unique': self.unique, \
-            'duplicates': self.duplicates
+            'duplicates': self.duplicates, 'top': self.top
         }
         return summary
 
-    def perform_column_check(self):
+    def perform_check(self):
         return check_string_column(self)
 
 
 class NumericColumn(Column):
-    data_type = ''
-    max = 0.0,
-    min = 0.0,
-    std = 0.0,
-    mean = 0.0,
-    zeros = 0
-
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
         self.data_type = self.__class__.__name__
@@ -186,41 +168,40 @@ class NumericColumn(Column):
         summary['zeros'] = self.zeros
         return summary
 
-    def perform_column_check(self):
+    def perform_check(self):
         return check_numeric_column(self)
 
 
 class TemporalColumn(Column):
-    data_type = ''
-    min = None
-    max = None
-    unique = 0
-
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
+        self.data_type = self.__class__.__name__
+        self.min = None
+        self.max = None
+        self.unique = 0
 
     def get_summary(self):
         summary = {}
-        summary['data_type'] = self.__class__.__name__
+        summary['data_type'] = self.data_type
         summary['min'] = None
         summary['max'] = None
         summary['unique'] = 0
         return summary
 
-    def perform_column_check(self):
+    def perform_check(self):
         return check_temporal_column(self)
 
 
 class BooleanColumn(Column):
-    data_type = ''
-    top = ''
-    
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
+        self.data_type = self.__class__.__name__
+        self.top = raw_column.value_counts().idxmax()
  
     def get_summary(self):
         summary = {}
-        summary['data_type'] = self.__class__.__name__
+        summary['data_type'] = self.data_type
+        summary['top'] = self.top
 
-    def perform_column_check(self):
+    def perform_check(self):
         return check_boolean_column(self)

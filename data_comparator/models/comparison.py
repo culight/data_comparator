@@ -11,10 +11,6 @@ import pandas as pd
 from models.dataset import Dataset, Column
 
 class Comparison:
-    col1 = None
-    col2 = None
-    name = ''
-
     def __init__(self, col1, col2):
         
         if not isinstance(col1.__class__, Column.__class__):

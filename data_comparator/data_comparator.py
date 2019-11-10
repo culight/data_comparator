@@ -97,7 +97,7 @@ def add_datasets(
 
 def clear_datasets():
     """Removes all active datasets"""
-    print("Clearing all active datasets...")
+    print("\nClearing all active datasets...")
     _DATASETS = {}
 
 
@@ -187,24 +187,19 @@ def add_comparisons(dataset1, dataset2, *col_pairs):
     return _COMPARISONS
 
 
-def profile(dataset, col_list):
-    assert dataset and isinstance(dataset.__class__, Dataset.__class__), \
-        'ERROR: At least one valid dataset must be provided'
-    assert columns and isintance(columns, list), \
-        'ERROR: Columns must be provided in a list format'
-
-    _PROFILE = {}
-    if '*' in columns:
-        for col in dataset.columns:
-            comp = Comparison(col1, col2)
-
-
-    
+def compare():
+    for comp in _COMPARISONS.values():
+        data = {
+            comp.col1.name: list(comp.col1.get_summary().values()),
+            comp.col2.name: list(comp.col2.get_summary().values())
+        }
+        df = pd.DataFrame(data, index=list(comp.col1.get_summary().keys()))
+        _COMP_DF_DICT[comp.name] = df
 
 
 def clear_comparisons():
     """Removes all active copmarisons"""
-    print("Clearing all active comparisons...")
+    print("\nClearing all active comparisons...")
     _COMPARISONS = {}
 
 
@@ -221,20 +216,28 @@ def remove_comparison(comp_name):
         print('ERROR: Could not find comparison {}'.format(comp_name))
         
 
+def profile(dataset, col_list):
+    assert dataset and isinstance(dataset.__class__, Dataset.__class__), \
+        'ERROR: At least one valid dataset must be provided'
+    assert col_list and isinstance(col_list, list), \
+        'ERROR: Columns must be provided in a list format'
+
+    if '*' in col_list:
+        for col in dataset.columns:
+            _PROFILE[col.name] = col.get_summary()
+            
+    for col_name in col_list:
+        col = dataset.columns[col_name]
+        col_full = dataset.name + '.' + col.name
+        _PROFILE[col_full] = col.get_summary()
+        
+    return _PROFILE
+    
+          
 def clear_all():
      """Removes all active datasets and copmarisons"""
      clear_datasets()
      clear_comparisons()
-
-
-def compare():
-    for comp in _COMPARISONS.values():
-        data = {
-            comp.col1.name: list(comp.col1.get_summary().values()),
-            comp.col2.name: list(comp.col2.get_summary().values())
-        }
-        df = pd.DataFrame(data, index=list(comp.col1.get_summary().keys()))
-        _COMP_DF_DICT[comp.name] = df
 
 
 def view(comp_name):
