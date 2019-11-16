@@ -21,7 +21,7 @@ _COMP_DF_DICT = {}
 _PROFILE = {}
 
 
-def add_dataset(
+def load_dataset(
         data_source,
         data_source_name=''
     ):
@@ -58,9 +58,9 @@ def add_dataset(
     return dataset
 
 
-def add_datasets(
+def load_datasets(
         *data_sources,
-        data_source_names:tuple=None
+        data_source_names:list=None
     ):
     """
     Load multiple data sources to add to the set of active datasets
