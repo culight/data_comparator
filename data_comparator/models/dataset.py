@@ -8,6 +8,7 @@
 """
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 import re
 import pandas as pd
@@ -16,11 +17,10 @@ from models.check import check_string_column, check_numeric_column, \
 
 logging.basicConfig(format='%(asctime)s - %(message)s')
 
-ACCEPTED_INPUT_FORMATS = ['sashdat', 'sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas']
+ACCEPTED_INPUT_FORMATS = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas', 'json']
 
 
 class Dataset:
-
     def __init__(self, data_src, name):
         self.path = None
         self.input_format = ''
@@ -28,6 +28,7 @@ class Dataset:
         self.dataframe = None
         self.columns = {}
         self.name = name
+        self.load_time = 0.0
         try:
             # probably a path string
             self.path = Path(data_src)
@@ -69,26 +70,33 @@ class Dataset:
     def load_data_frompath(self):
         print('\nLoading raw data into dataset object...')
         data = None
+        start_time = datetime.now()
         if self.input_format == 'sas7bdat':
             data = pd.read_sas(str(self.path))
         elif self.input_format == 'csv':
             data = pd.read_csv(str(self.path))
         elif self.input_format == 'parquet':
             data = pd.read_parquet(str(self.path))
+        elif self.input_format == 'json':
+            data = pd.read_json(str(self.path))
         else:
             raise ValueError('Path type {} not recognized'.format(self.input_format))
-
+        end_time = datetime.now()
+        self.load_time = end_time - start_time
         return data
 
     def load_data_fromdf(self, df):
         print('\nLoading raw data into dataset object...')
         data = None
+        start_time = datetime.now()
         if 'pyspark' in self.input_format:
             data = df.toPandas()
         elif 'pandas' in self.input_format:
             data = df
         else:
             raise ValueError('object type not recognized')
+        end_time = datetime.now()
+        self.load_time = end_time - start_time
         return data
 
     def prepare_columns(self):
@@ -202,6 +210,7 @@ class BooleanColumn(Column):
         summary = {}
         summary['data_type'] = self.data_type
         summary['top'] = self.top
+        return summary
 
     def perform_check(self):
         return check_boolean_column(self)

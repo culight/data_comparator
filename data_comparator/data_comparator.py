@@ -21,7 +21,7 @@ _COMP_DF_DICT = {}
 _PROFILE = {}
 
 
-def add_dataset(
+def load_dataset(
         data_source,
         data_source_name=''
     ):
@@ -48,19 +48,21 @@ def add_dataset(
         src_name = 'dataset_' + str(dataset_index)
 
     print(
-        "Creating dataset '{}' from source '{}'...".format(src_name, src)
+        "\nCreating dataset '{}' from source:\n '{}'".format(src_name, src)
     )
 
     dataset = Dataset(src, src_name)
     dataset.prepare_columns()
     _DATASETS[src_name] = dataset
+    
+    print("\nDone")
 
     return dataset
 
 
-def add_datasets(
+def load_datasets(
         *data_sources,
-        data_source_names:tuple=None
+        data_source_names:list=None
     ):
     """
     Load multiple data sources to add to the set of active datasets
@@ -87,12 +89,22 @@ def add_datasets(
             src_name = 'dataset_' + str(dataset_index)
 
         print(
-            "Creating dataset '{}' from source '{}'...".format(src_name, src)
+            "\nCreating dataset '{}' from source '{}'".format(src_name, src)
         )
 
         dataset = Dataset(src, src_name)
         dataset.prepare_columns()
         _DATASETS[src_name] = dataset
+        
+        print('\nDone')
+
+
+def get_datasets():
+    return _DATASETS
+
+
+def get_dataset(ds_name):
+    return _DATASETS[ds_name]
 
 
 def clear_datasets():
@@ -195,6 +207,14 @@ def compare():
         }
         df = pd.DataFrame(data, index=list(comp.col1.get_summary().keys()))
         _COMP_DF_DICT[comp.name] = df
+        
+
+def get_comparisons():
+    return _COMPARISONS
+
+
+def get_comparison(comp_name):
+    return _COMPARISONS[comp_name]
 
 
 def clear_comparisons():

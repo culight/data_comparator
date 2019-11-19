@@ -6,6 +6,7 @@
 
 ### DEVELOPER NOTES:
 """
+import re
 import pandas as pd
 
 def check_string_column(column):
@@ -15,7 +16,8 @@ def check_string_column(column):
         'capitalized': False,
         'empty_text': False,
         'numeric_data': False,
-        'odd_text_length_diff': False
+        'odd_text_length_diff': False,
+        'special_char': False
     }
 
     print('\nPerforming check for string column...')
@@ -43,11 +45,17 @@ def check_string_column(column):
             if not string_checks['white_space']:
                 if row_content != row_content.replace(' ', ''):
                     string_checks['white_space'] = True
+                    
             # all caps
             if not string_checks['capitalized']:
-                if row_content and len(row_content) > 0:
-                    if row_content == row_content.upper():
-                        string_checks['capitalized'] = True
+                if re.search(r'^[a-zA-Z]$', row_content) and row_content == row_content.upper():
+                    string_checks['capitalized'] = True
+                    
+            # special characters
+            if not string_checks['special_char']:
+                if re.search(r'[.!@#$%&*_+-=|\:";<>,./()[\]{}\'].', row_content):
+                    string_checks['special_char'] = True
+                    
             # suspicious difference in text length
             if not string_checks['odd_text_length_diff']:
                 diff = abs(len(row_content) - column.text_length_mean)
@@ -58,12 +66,27 @@ def check_string_column(column):
 
 
 def check_numeric_column(column):
-    pass
+    rows = column.data
+    numeric_checks = {
+        'white_space': False,
+        'capitalized': False,
+        'empty_text': False,
+    }
 
 
 def check_temporal_column(column):
     pass
 
 
-def check_boolean_column(columns):
-    pass
+def check_boolean_column(column):
+    boolean_checks = {
+        'only_true': False,
+        'only_false': False
+    }
+    
+    print('\nPerforming check for string column...')
+    if (column.top == False) and (column.unique == 1):
+        boolean_checks['only_false'] == True
+    elif (column.top == True) and (column.unique == 1):
+        boolean_checks['only_true'] == True
+        
