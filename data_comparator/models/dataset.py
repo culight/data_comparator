@@ -8,7 +8,7 @@
 """
 import logging
 import os
-import datetime
+from datetime import datetime
 from pathlib import Path
 import re
 import pandas as pd
@@ -210,6 +210,7 @@ class BooleanColumn(Column):
         summary = {}
         summary['data_type'] = self.data_type
         summary['top'] = self.top
+        return summary
 
     def perform_check(self):
         return check_boolean_column(self)
