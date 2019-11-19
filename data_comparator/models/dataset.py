@@ -1,9 +1,7 @@
 """
 ### CODE OWNERS: Demerrick Moton
-
 ### OBJECTIVE:
     data model for data file object
-
 ### DEVELOPER NOTES:
 """
 import logging
@@ -19,8 +17,7 @@ logging.basicConfig(format='%(asctime)s - %(message)s')
 
 ACCEPTED_INPUT_FORMATS = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas', 'json']
 
-
-class Dataset:
+class Dataset(object):
     def __init__(self, data_src, name):
         self.path = None
         self.input_format = ''
@@ -44,7 +41,7 @@ class Dataset:
                 )
                 # count object types in size
                 self.size = self.dataframe.memory_usage(deep=True).sum()
-
+                
     def _get_input_format(self):
         suffix = self.path.suffix.replace('.', '')
         if suffix not in ACCEPTED_INPUT_FORMATS:
@@ -103,6 +100,7 @@ class Dataset:
         print("\nPreparing columns...")
         if  len(self.dataframe.columns) == 0:
             raise TypeError('No columns found for this dataframe')
+        columns = {}
         for raw_col_name in self.dataframe.columns:
             raw_column = self.dataframe[raw_col_name]
             if re.search(r'(int)', str(raw_column.dtype)):

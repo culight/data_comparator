@@ -8,6 +8,7 @@
 """
 import re
 import pandas as pd
+import numpy as np
 
 def check_string_column(column):
     rows = column.data
@@ -66,12 +67,26 @@ def check_string_column(column):
 
 
 def check_numeric_column(column):
-    rows = column.data
     numeric_checks = {
-        'white_space': False,
-        'capitalized': False,
-        'empty_text': False,
+        'pot_outliers': False,
+        'susp_skewness': False,
+        'susp_zero_count': False,
     }
+
+    col_skew = column.data.skew()
+    if (col_skew < -1) | (col_skew > 1):
+        numeric_checks['susp_skewness'] = True
+
+    col_zscore = (column.data - column.data.mean())/column.data.std(ddof=0)
+    num_pot_outliers = len(np.where(np.abs(col_zscore) > 3)[0])
+    if(num_pot_outliers > 0):
+        numeric_checks['pot_outliers'] = True
+
+    zero_perc = column.zeros/column.count
+    if zero_perc > 0.15:
+        numeric_checks['susp_zero_count'] = True
+
+    return numeric_checks
 
 
 def check_temporal_column(column):
