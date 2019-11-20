@@ -9,6 +9,7 @@
 import re
 import pandas as pd
 import numpy as np
+from dateutil.parser import parse
 
 def check_string_column(column):
     rows = column.data
@@ -18,7 +19,8 @@ def check_string_column(column):
         'empty_text': False,
         'numeric_data': False,
         'odd_text_length_diff': False,
-        'special_char': False
+        'special_char': False,
+        'temporal_data': False
     }
 
     print('\nPerforming check for string column...')
@@ -33,9 +35,17 @@ def check_string_column(column):
             float(row_content)
             string_checks['numeric_data'] = True
             skip = True
-        except:
+        except ValueError:
             pass
-        
+
+        # check for time data
+        try:
+            parse(row_content, fuzzy=True)
+            string_checks['temporal_data'] = True
+            skip = True
+        except ValueError:
+            pass
+
         # empty text
         if len(row_content.replace(' ','')) == 0:
             string_checks['empty_text'] = True
@@ -90,7 +100,24 @@ def check_numeric_column(column):
 
 
 def check_temporal_column(column):
-    pass
+    temporal_checks = {
+        'empty_date'
+        'small_range',
+        'large_range'
+    }
+
+    # check for empty fields
+    temporal_checks['empty_date'] = date.data.empty 
+    
+    # check for odd ranges
+    if column.max() - column.min() < 90:
+        temporal_checks['small_range'] = True
+
+    # check for odd ranges
+    if column.max() - column.min() > 365*5:
+        temporal_checks['large_range'] = True
+
+    return temporal_checks
 
 
 def check_boolean_column(column):
@@ -105,3 +132,4 @@ def check_boolean_column(column):
     elif (column.top == True) and (column.unique == 1):
         boolean_checks['only_true'] == True
         
+    return boolean_checks
