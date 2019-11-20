@@ -18,7 +18,7 @@ logging.basicConfig(format='%(asctime)s - %(message)s')
 ACCEPTED_INPUT_FORMATS = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas', 'json']
 
 class Dataset(object):
-    def __init__(self, data_src, name):
+    def __init__(self, data_src, name, **load_params):
         self.path = None
         self.input_format = ''
         self.size = ''
@@ -31,7 +31,7 @@ class Dataset(object):
             self.path = Path(data_src)
             self.input_format = self._get_input_format()
             self.size = self._get_data_size(data_src)
-            self.dataframe = self.load_data_frompath()
+            self.dataframe = self.load_data_frompath(**load_params)
         except TypeError:
             # probably an dataframe object
             self.input_format = str(data_src.__class__)
@@ -41,7 +41,10 @@ class Dataset(object):
                 )
                 # count object types in size
                 self.size = self.dataframe.memory_usage(deep=True).sum()
-                
+
+        # try to categorize the columns
+        self._prepare_columns()
+
     def _get_input_format(self):
         suffix = self.path.suffix.replace('.', '')
         if suffix not in ACCEPTED_INPUT_FORMATS:
@@ -64,18 +67,18 @@ class Dataset(object):
 
         return size
 
-    def load_data_frompath(self):
+    def load_data_frompath(self, **load_params):
         print('\nLoading raw data into dataset object...')
         data = None
         start_time = datetime.now()
         if self.input_format == 'sas7bdat':
-            data = pd.read_sas(str(self.path))
+            data = pd.read_sas(str(self.path), **load_params)
         elif self.input_format == 'csv':
-            data = pd.read_csv(str(self.path))
+            data = pd.read_csv(str(self.path), **load_params)
         elif self.input_format == 'parquet':
-            data = pd.read_parquet(str(self.path))
+            data = pd.read_parquet(str(self.path), **load_params)
         elif self.input_format == 'json':
-            data = pd.read_json(str(self.path))
+            data = pd.read_json(str(self.path), **load_params)
         else:
             raise ValueError('Path type {} not recognized'.format(self.input_format))
         end_time = datetime.now()
@@ -96,7 +99,7 @@ class Dataset(object):
         self.load_time = end_time - start_time
         return data
 
-    def prepare_columns(self):
+    def _prepare_columns(self):
         print("\nPreparing columns...")
         if  len(self.dataframe.columns) == 0:
             raise TypeError('No columns found for this dataframe')
@@ -182,16 +185,19 @@ class TemporalColumn(Column):
     def __init__(self, raw_column):
         Column.__init__(self, raw_column)
         self.data_type = self.__class__.__name__
-        self.min = None
-        self.max = None
-        self.unique = 0
+        self.min = raw_column.min()
+        self.max = raw_column.max()
+        descr = raw_column.describe()
+        self.unique = descr['unique']
+        self.top = descr['top']
 
     def get_summary(self):
         summary = {}
         summary['data_type'] = self.data_type
-        summary['min'] = None
-        summary['max'] = None
-        summary['unique'] = 0
+        summary['min'] = self.min
+        summary['max'] = self.max
+        summary['unique'] = self.unique
+        summary['top'] = self.top
         return summary
 
     def perform_check(self):

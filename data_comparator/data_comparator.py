@@ -23,7 +23,8 @@ _PROFILE = {}
 
 def load_dataset(
         data_source,
-        data_source_name=''
+        data_source_name='',
+        **load_params
     ):
     """
     Load a single data source to add to the set of active datasets
@@ -51,8 +52,11 @@ def load_dataset(
         "\nCreating dataset '{}' from source:\n '{}'".format(src_name, src)
     )
 
-    dataset = Dataset(src, src_name)
-    dataset.prepare_columns()
+    dataset = Dataset(
+        data_src=src, 
+        name=src_name, 
+        **load_params
+    )
     _DATASETS[src_name] = dataset
     
     print("\nDone")
@@ -62,7 +66,8 @@ def load_dataset(
 
 def load_datasets(
         *data_sources,
-        data_source_names:list=None
+        data_source_names:list=None,
+        **load_params
     ):
     """
     Load multiple data sources to add to the set of active datasets
@@ -92,10 +97,9 @@ def load_datasets(
             "\nCreating dataset '{}' from source '{}'".format(src_name, src)
         )
 
-        dataset = Dataset(src, src_name)
-        dataset.prepare_columns()
+        dataset = Dataset(src, src_name, **load_params)
         _DATASETS[src_name] = dataset
-        
+
         print('\nDone')
 
 
