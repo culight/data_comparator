@@ -101,9 +101,9 @@ def check_numeric_column(column):
 
 def check_temporal_column(column):
     temporal_checks = {
-        'empty_date'
-        'small_range',
-        'large_range'
+        'empty_date': False,
+        'small_range': False,
+        'large_range': False
     }
 
     # check for empty fields

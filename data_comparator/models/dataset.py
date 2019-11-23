@@ -18,7 +18,7 @@ logging.basicConfig(format='%(asctime)s - %(message)s')
 ACCEPTED_INPUT_FORMATS = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas', 'json']
 
 class Dataset(object):
-    def __init__(self, data_src, name, **load_params):
+    def __init__(self, data_src: object, name: str, **load_params):
         self.path = None
         self.input_format = ''
         self.size = ''
@@ -45,13 +45,35 @@ class Dataset(object):
         # try to categorize the columns
         self._prepare_columns()
 
-    def _get_input_format(self):
+    def _get_input_format(self) -> str:
         suffix = self.path.suffix.replace('.', '')
         if suffix not in ACCEPTED_INPUT_FORMATS:
             raise ValueError('File type not supported')
         return suffix
+    
+    def _format_size(self, size):
+        'Return the given bytes as a human friendly KB, MB, GB, or TB string'
+        B = float(size)
+        KB = float(1024)
+        MB = float(KB ** 2) # 1,048,576
+        GB = float(KB ** 3) # 1,073,741,824
+        TB = float(KB ** 4) # 1,099,511,627,776
 
-    def _get_data_size(self, data_src):
+        if size < KB:
+            return '{0} {1}'.format(size,'Bytes' if 0 == size > 1 else 'Byte')
+        elif KB <= size < MB:
+            return '{0:.2f} KB'.format(size/KB)
+        elif MB <= size < GB:
+            return '{0:.2f} MB'.format(size/MB)
+        elif GB <= size < TB:
+            return '{0:.2f} GB'.format(size/GB)
+        elif TB <= size:
+            return '{0:.2f} TB'.format(size/TB)
+
+        return size
+
+
+    def _get_data_size(self, data_src: object) -> int:
         size = 0
         if self.path.is_dir():
             for file in os.listdir(data_src):
@@ -64,10 +86,11 @@ class Dataset(object):
             raise ValueError('File size of {} is too small'.format(size))
         if size > 800000000:
             raise ValueError('File size of {} is too large'.format(size))
+        
+        formatted_size = self._format_size(size)
+        return formatted_size
 
-        return size
-
-    def load_data_frompath(self, **load_params):
+    def load_data_frompath(self, **load_params) -> pd.DataFrame:
         print('\nLoading raw data into dataset object...')
         data = None
         start_time = datetime.now()
@@ -82,10 +105,10 @@ class Dataset(object):
         else:
             raise ValueError('Path type {} not recognized'.format(self.input_format))
         end_time = datetime.now()
-        self.load_time = end_time - start_time
+        self.load_time = str(end_time - start_time)
         return data
 
-    def load_data_fromdf(self, df):
+    def load_data_fromdf(self, df) -> pd.DataFrame:
         print('\nLoading raw data into dataset object...')
         data = None
         start_time = datetime.now()
@@ -96,7 +119,7 @@ class Dataset(object):
         else:
             raise ValueError('object type not recognized')
         end_time = datetime.now()
-        self.load_time = end_time - start_time
+        self.load_time = str(end_time - start_time)
         return data
 
     def _prepare_columns(self):
@@ -118,7 +141,7 @@ class Dataset(object):
                 self.columns[raw_col_name] = BooleanColumn(raw_column)
    
 
-class Column:
+class Column(object):
     def __init__(self, raw_column):
         self.name = raw_column.name
         self.count = raw_column.count()
@@ -141,7 +164,7 @@ class StringColumn(Column):
         self.duplicates = self.count - self.unique
         self.top = raw_column.value_counts().idxmax()
 
-    def get_summary(self):
+    def get_summary(self) -> dict:
         summary = {
             'name': self.name, 'count': self.count, 'missing': self.missing, \
             'data_type': self.data_type, 'text_length_mean': self.text_length_mean, \
@@ -150,7 +173,7 @@ class StringColumn(Column):
         }
         return summary
 
-    def perform_check(self):
+    def perform_check(self) -> dict:
         return check_string_column(self)
 
 
@@ -164,7 +187,7 @@ class NumericColumn(Column):
         self.mean = raw_column.mean()
         self.zeros = (raw_column == 0).sum()
 
-    def get_summary(self):
+    def get_summary(self) -> dict:
         summary = {}
         summary['name'] = self.name
         summary['count'] = self.count
@@ -177,7 +200,7 @@ class NumericColumn(Column):
         summary['zeros'] = self.zeros
         return summary
 
-    def perform_check(self):
+    def perform_check(self) -> dict:
         return check_numeric_column(self)
 
 
@@ -191,7 +214,7 @@ class TemporalColumn(Column):
         self.unique = descr['unique']
         self.top = descr['top']
 
-    def get_summary(self):
+    def get_summary(self) -> dict:
         summary = {}
         summary['data_type'] = self.data_type
         summary['min'] = self.min
@@ -200,7 +223,7 @@ class TemporalColumn(Column):
         summary['top'] = self.top
         return summary
 
-    def perform_check(self):
+    def perform_check(self) -> dict:
         return check_temporal_column(self)
 
 
@@ -210,11 +233,11 @@ class BooleanColumn(Column):
         self.data_type = self.__class__.__name__
         self.top = raw_column.value_counts().idxmax()
  
-    def get_summary(self):
+    def get_summary(self) -> dict:
         summary = {}
         summary['data_type'] = self.data_type
         summary['top'] = self.top
         return summary
 
-    def perform_check(self):
+    def perform_check(self) -> dict:
         return check_boolean_column(self)
