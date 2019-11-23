@@ -148,7 +148,7 @@ def remove_dataset(src_name):
         print('ERROR: Could not find dataset {}'.format(src_name))
 
 
-def _get_compare_df(comp: Comparison, col1_checks: dict, col2_checks: dict):
+def _get_compare_df(comp: Comparison, col1_checks: dict, col2_checks: dict, add_diff_col):
     col1 = comp.col1
     col2 = comp.col2
     col1_values = list(col1.get_summary().values()) + list(col1_checks.values())
@@ -160,10 +160,18 @@ def _get_compare_df(comp: Comparison, col1_checks: dict, col2_checks: dict):
             len(col1_values), col1.name, len(col2_values), col2.name
         )
 
-    data = {
-        comp.col1.name: col1_values,
-        comp.col2.name: col2_values
-    }
+    if add_diff_col:
+        data = {
+            comp.col1.name: col1_values,
+            comp.col2.name: col2_values,
+            'diff_col': comp.create_diff_column()
+        }
+    else:
+        data = {
+            comp.col1.name: col1_values,
+            comp.col2.name: col2_values
+        }
+        
     _df = pd.DataFrame(
         data,
         index=col_keys
@@ -179,9 +187,10 @@ def compare(
         ds_names: list=None,
         ds_params_list: list=None,
         raw_data: bool=True,
-        perform_checks: bool=False,
+        perform_check: bool=False,
         compare: bool=True,
-        save_comp: bool=True
+        save_comp: bool=True,
+        add_diff_col: bool=False
     ):
 
     assert ds_pair1 and isinstance(ds_pair1, tuple) and len(ds_pair1) == 2, \
@@ -221,9 +230,9 @@ def compare(
     col1_checks = {}
     col2_checks = {}
     
-    if perform_checks:
-        col1_checks = col1.perform_checks()
-        col2_checks = col2.perform_checks()
+    if perform_check:
+        col1_checks = col1.perform_check()
+        col2_checks = col2.perform_check()
     
     _comp = Comparison(col1, col2)
     
@@ -231,7 +240,7 @@ def compare(
         COMPARISONS[_comp.name] = _comp
     
     if compare:
-        _df = _get_compare_df(_comp, col1_checks, col2_checks)
+        _df = _get_compare_df(_comp, col1_checks, col2_checks, add_diff_col)
         return _df
     
     return _comp
@@ -245,12 +254,6 @@ def get_comparison(comp_name):
     return COMPARISONS[comp_name]
 
 
-def clear_comparisons():
-    """Removes all active copmarisons"""
-    print("\nClearing all active comparisons...")
-    COMPARISONS = {}
-
-
 def remove_comparison(comp_name):
     """
     Removes the specified comparison from active datasets
@@ -262,7 +265,13 @@ def remove_comparison(comp_name):
         del COMPARISONS[comp_name]
     except NameError:
         print('ERROR: Could not find comparison {}'.format(comp_name))
-        
+
+
+def clear_comparisons():
+    """Removes all active copmarisons"""
+    print("\nClearing all active comparisons...")
+    COMPARISONS = {}
+     
 
 def profile(dataset, col_list):
     assert dataset and isinstance(dataset.__class__, Dataset.__class__), \
