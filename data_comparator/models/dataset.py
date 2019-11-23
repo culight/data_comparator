@@ -216,6 +216,9 @@ class TemporalColumn(Column):
 
     def get_summary(self) -> dict:
         summary = {}
+        summary['name'] = self.name
+        summary['count'] = self.count
+        summary['missing'] = self.missing
         summary['data_type'] = self.data_type
         summary['min'] = self.min
         summary['max'] = self.max
@@ -235,6 +238,9 @@ class BooleanColumn(Column):
  
     def get_summary(self) -> dict:
         summary = {}
+        summary['name'] = self.name
+        summary['count'] = self.count
+        summary['missing'] = self.missing
         summary['data_type'] = self.data_type
         summary['top'] = self.top
         return summary
