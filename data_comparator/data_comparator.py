@@ -15,15 +15,15 @@ from models.comparison import Comparison
 
 logging.basicConfig(format='%(asctime)s - %(message)s')
 
-_DATASETS = {}
-_COMPARISONS = {}
-_COMP_DF_DICT = {}
-_PROFILE = {}
+DATASETS = {}
+COMPARISONS = {}
+COMP_DF = {}
+PROFILE = {}
 
 
 def load_dataset(
         data_source,
-        data_source_name='',
+        data_source_name: str='',
         **load_params
     ):
     """
@@ -45,7 +45,7 @@ def load_dataset(
     if data_source_name:
         src_name = data_source_name
     else:
-        dataset_index = len(_DATASETS)
+        dataset_index = len(DATASETS)
         src_name = 'dataset_' + str(dataset_index)
 
     print(
@@ -57,7 +57,7 @@ def load_dataset(
         name=src_name, 
         **load_params
     )
-    _DATASETS[src_name] = dataset
+    DATASETS[src_name] = dataset
     
     print("\nDone")
 
@@ -66,8 +66,8 @@ def load_dataset(
 
 def load_datasets(
         *data_sources,
-        data_source_names:list=None,
-        **load_params
+        data_source_names: list=None,
+        load_params_list: list=None
     ):
     """
     Load multiple data sources to add to the set of active datasets
@@ -79,42 +79,60 @@ def load_datasets(
     Output:
         Resulting dataset collection
     """
-    if not data_sources:
-        print('ERROR: Valid data source must be provided')
-        return
-
+    assert data_sources, 'Valid data source must be provided'
+    src_names = []
     for i, src in enumerate(data_sources):
+        src_name = None
+        load_params = None
+        dataset = None
         if data_source_names:
             try:
                 src_name = data_source_names[i]
             except IndexError:
-                print('ERROR: Number of names must match number of data sources')
+                print('Number of names must match number of data sources')
         else:
-            dataset_index = len(_DATASETS)
+            dataset_index = len(DATASETS)
             src_name = 'dataset_' + str(dataset_index)
+            src_names.append(src_name)
 
-        print(
-            "\nCreating dataset '{}' from source '{}'".format(src_name, src)
-        )
+        if load_params_list:
+            try:
+                load_params = load_params_list[i]
+            except IndexError:
+                print('Number of load parameters must match number of data sources')
+            dataset = Dataset(
+                data_src=src, 
+                name=src_name,
+                **load_params
+            )            
+        else:
+            dataset = Dataset(
+                data_src=src, 
+                name=src_name
+            )
 
-        dataset = Dataset(src, src_name, **load_params)
-        _DATASETS[src_name] = dataset
-
+        print("\nCreating dataset '{}'".format(src_name))
+        DATASETS[src_name] = dataset
         print('\nDone')
+    
+    if not data_source_names:
+        data_source_names = src_names
+
+    return [DATASETS[ds_name] for ds_name in data_source_names]
 
 
 def get_datasets():
-    return _DATASETS
+    return DATASETS
 
 
 def get_dataset(ds_name):
-    return _DATASETS[ds_name]
+    return DATASETS[ds_name]
 
 
 def clear_datasets():
     """Removes all active datasets"""
     print("\nClearing all active datasets...")
-    _DATASETS = {}
+    DATASETS = {}
 
 
 def remove_dataset(src_name):
@@ -125,106 +143,112 @@ def remove_dataset(src_name):
     """
     try:
         print('Removing {}'.format(src_name))
-        del _DATASETS[src_name]
+        del DATASETS[src_name]
     except NameError:
         print('ERROR: Could not find dataset {}'.format(src_name))
 
 
-def add_comparison(dataset1, dataset2, col_pair):
-    assert dataset1 and isinstance(dataset1.__class__, Dataset.__class__), \
-        'ERROR: At least one valid dataset must be provided'
-    assert not isinstance(dataset2, tuple), \
-        'ERROR: Must enter a second dataset. \
-            If only one dataset is needed, enter "None" for the second'
-    assert col_pair, 'ERROR: At least one column pair must be provided for comparison'
+def _get_compare_df(comp: Comparison, col1_checks: dict, col2_checks: dict):
+    col1 = comp.col1
+    col2 = comp.col2
+    col1_values = list(col1.get_summary().values()) + list(col1_checks.values())
+    col2_values = list(col2.get_summary().values()) + list(col2_checks.values())
+    col_keys = list(col1.get_summary().keys()) + list(col1_checks.keys())
 
-    ds1 = None
-    ds2 = None
-    col1 = None
-    col2 = None
+    assert len(col1_values) == len(col2_values), \
+        '{} values found in {}, but {} found in {}'.format(
+            len(col1_values), col1.name, len(col2_values), col2.name
+        )
 
-    ds1 = dataset1
-    ds2 = dataset2 if dataset2 else dataset1
-
-    assert isinstance(col_pair, tuple) and len(col_pair) == 2, \
-            'ERROR: Column pairing must be presented as a tuple of two columns to be compared'
-
-    if col_pair[0] in ds1.columns:
-        col1 = ds1.columns[col_pair[0]]
-    else:
-        print('ERROR: {} is not a column in {}'.format(col_pair[0], ds1.name))
-        return
-    if col_pair[1] in ds2.columns:
-        col2 = ds2.columns[col_pair[1]]
-    else:
-        print('ERROR: {} is not a column in {}'.format(col_pair[1], ds2.name))
-        return
+    data = {
+        comp.col1.name: col1_values,
+        comp.col2.name: col2_values
+    }
+    _df = pd.DataFrame(
+        data,
+        index=col_keys
+    )
+    COMP_DF[comp.name] = _df
     
-    comp = Comparison(col1, col2)
-    _COMPARISONS[comp.name] = comp
+    return _df
+        
+        
+def compare(
+        ds_pair1: tuple,
+        ds_pair2: tuple,
+        ds_names: list=None,
+        ds_params_list: list=None,
+        raw_data: bool=True,
+        perform_checks: bool=False,
+        compare: bool=True,
+        save_comp: bool=True
+    ):
 
-    return comp
-
-
-def add_comparisons(dataset1, dataset2, *col_pairs):
-    assert dataset1 and isinstance(dataset1.__class__, Dataset.__class__), \
-        'ERROR: At least one valid dataset must be provided'
-    assert not isinstance(dataset2, tuple), \
-        'ERROR: Must enter a second dataset. \
-            If only one dataset is needed, enter "None" for the second'
-    assert len(col_pairs) > 0, 'ERROR: At least one column pair must be provided for comparison'
-
+    assert ds_pair1 and isinstance(ds_pair1, tuple) and len(ds_pair1) == 2, \
+        'First dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
+    assert ds_pair2 and isinstance(ds_pair2, tuple) and len(ds_pair2) == 2, \
+        'Second dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
+    
     ds1 = None
     ds2 = None
-    col1 = None
-    col2 = None
-
-    ds1 = dataset1
-    ds2 = dataset2 if dataset2 else dataset1
-
-    for col_pair in col_pairs:
-        assert isinstance(col_pair, tuple) and len(col_pair) == 2, \
-            'ERROR: Column pairing must be presented as a tuple of two columns to be compared'
-
-        if col_pair[0] in ds1.columns:
-            col1 = ds1.columns[col_pair[0]]
-        else:
-            print('ERROR: {} is not a column in {}'.format(col_pair[0], ds1.name))
-            return
-        if col_pair[1] in ds2.columns:
-            col2 = ds2.columns[col_pair[1]]
-        else:
-            print('ERROR: {} is not a column in {}'.format(col_pair[1], ds2.name))
-            return
-
-        comp = Comparison(col1, col2)
-        _COMPARISONS[comp.name] = comp
-
-    return _COMPARISONS
-
-
-def compare():
-    for comp in _COMPARISONS.values():
-        data = {
-            comp.col1.name: list(comp.col1.get_summary().values()),
-            comp.col2.name: list(comp.col2.get_summary().values())
-        }
-        df = pd.DataFrame(data, index=list(comp.col1.get_summary().keys()))
-        _COMP_DF_DICT[comp.name] = df
+    if raw_data:
+        # need to first process raw data sources into dataset objects
+        data_src1 = ds_pair1[0]
+        data_src2 = ds_pair2[0]
+        ds1, ds2 = load_datasets(
+            data_src1, 
+            data_src2,
+            data_source_names=ds_names,
+            load_params_list=[{}, {}]
+        )
+    else:
+        # dataset objects have been passed directly
+        ds1 = ds_pair1[0]
+        ds2 = ds_pair2[0]
+    
+    assert ds1 and ds2, "There was an issue loading a dataset object"
+    
+    col_name1 = ds_pair1[1]
+    col_name2 = ds_pair2[1]
+    
+    assert col_name1 in ds1.columns, \
+        '{} is not a valid column in dataset {}'.format(col_name1, ds1)
+    assert col_name2 in ds2.columns, \
+        '{} is not a valid column in dataset {}'.format(col_name2, ds2)
         
+    col1 = ds1.columns[col_name1]
+    col2 = ds2.columns[col_name2]
+    col1_checks = {}
+    col2_checks = {}
+    
+    if perform_checks:
+        col1_checks = col1.perform_checks()
+        col2_checks = col2.perform_checks()
+    
+    _comp = Comparison(col1, col2)
+    
+    if save_comp:
+        COMPARISONS[_comp.name] = _comp
+    
+    if compare:
+        _df = _get_compare_df(_comp, col1_checks, col2_checks)
+        return _df
+    
+    return _comp
+
 
 def get_comparisons():
-    return _COMPARISONS
+    return COMPARISONS
 
 
 def get_comparison(comp_name):
-    return _COMPARISONS[comp_name]
+    return COMPARISONS[comp_name]
 
 
 def clear_comparisons():
     """Removes all active copmarisons"""
     print("\nClearing all active comparisons...")
-    _COMPARISONS = {}
+    COMPARISONS = {}
 
 
 def remove_comparison(comp_name):
@@ -235,7 +259,7 @@ def remove_comparison(comp_name):
     """
     try:
         print('Removing comparison {}'.format(comp_name))
-        del _COMPARISONS[comp_name]
+        del COMPARISONS[comp_name]
     except NameError:
         print('ERROR: Could not find comparison {}'.format(comp_name))
         
@@ -248,14 +272,14 @@ def profile(dataset, col_list):
 
     if '*' in col_list:
         for col in dataset.columns:
-            _PROFILE[col.name] = col.get_summary()
+            PROFILE[col.name] = col.get_summary()
             
     for col_name in col_list:
         col = dataset.columns[col_name]
         col_full = dataset.name + '.' + col.name
-        _PROFILE[col_full] = col.get_summary()
+        PROFILE[col_full] = col.get_summary()
         
-    return _PROFILE
+    return PROFILE
     
           
 def clear_all():
@@ -265,7 +289,7 @@ def clear_all():
 
 
 def view(comp_name):
-    print(_COMP_DF_DICT[comp_name])
+    print(COMP_DF[comp_name])
 
 
 def main():

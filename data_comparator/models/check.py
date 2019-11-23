@@ -107,14 +107,16 @@ def check_temporal_column(column):
     }
 
     # check for empty fields
-    temporal_checks['empty_date'] = date.data.empty 
+    temporal_checks['empty_date'] = column.data.empty 
+    
+    time_delta = column.max - column.min
     
     # check for odd ranges
-    if column.max() - column.min() < 90:
+    if time_delta.days < 90:
         temporal_checks['small_range'] = True
 
     # check for odd ranges
-    if column.max() - column.min() > 365*5:
+    if time_delta.days > 365*5:
         temporal_checks['large_range'] = True
 
     return temporal_checks

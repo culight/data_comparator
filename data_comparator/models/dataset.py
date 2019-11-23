@@ -60,7 +60,7 @@ class Dataset(object):
         TB = float(KB ** 4) # 1,099,511,627,776
 
         if size < KB:
-            return '{0} {1}'.format(size,'Bytes' if 0 == size > 1 else 'Byte')
+            return '{0} {1}'.format(B,'Bytes' if 0 == size > 1 else 'Byte')
         elif KB <= size < MB:
             return '{0:.2f} KB'.format(size/KB)
         elif MB <= size < GB:
@@ -71,7 +71,6 @@ class Dataset(object):
             return '{0:.2f} TB'.format(size/TB)
 
         return size
-
 
     def _get_data_size(self, data_src: object) -> int:
         size = 0
@@ -139,8 +138,18 @@ class Dataset(object):
                 self.columns[raw_col_name] = TemporalColumn(raw_column)
             if re.search(r'(bool)', str(raw_column.dtype)):
                 self.columns[raw_col_name] = BooleanColumn(raw_column)
+    
+    def get_summary(self):
+        return {
+            'path': self.path,
+            'format': self.input_format,
+            'size': self.size,
+            'columns': self.columns,
+            'name': self.name,
+            'load_time': self.load_time
+        }
+        
    
-
 class Column(object):
     def __init__(self, raw_column):
         self.name = raw_column.name
@@ -165,13 +174,17 @@ class StringColumn(Column):
         self.top = raw_column.value_counts().idxmax()
 
     def get_summary(self) -> dict:
-        summary = {
-            'name': self.name, 'count': self.count, 'missing': self.missing, \
-            'data_type': self.data_type, 'text_length_mean': self.text_length_mean, \
-            'text_length_std': self.text_length_std, 'unique': self.unique, \
-            'duplicates': self.duplicates, 'top': self.top
+        return {
+            'name': self.name,
+            'count': self.count,
+            'missing': self.missing,
+            'data_type': self.data_type,
+            'text_length_mean': self.text_length_mean,
+            'text_length_std': self.text_length_std,
+            'unique': self.unique,
+            'duplicates': self.duplicates,
+            'top': self.top
         }
-        return summary
 
     def perform_check(self) -> dict:
         return check_string_column(self)
@@ -188,17 +201,17 @@ class NumericColumn(Column):
         self.zeros = (raw_column == 0).sum()
 
     def get_summary(self) -> dict:
-        summary = {}
-        summary['name'] = self.name
-        summary['count'] = self.count
-        summary['missing'] = self.missing
-        summary['data_type'] = self.data_type
-        summary['min'] = self.min
-        summary['max'] = self.max
-        summary['std'] = self.std
-        summary['mean'] = self.mean
-        summary['zeros'] = self.zeros
-        return summary
+        return {
+            'name': self.name,
+            'count': self.count,
+            'missing': self.missing,
+            'data_type': self.data_type,
+            'min': self.min,
+            'max': self.max,
+            'std': self.std,
+            'mean': self.mean,
+            'zeros': self.zeros
+        }
 
     def perform_check(self) -> dict:
         return check_numeric_column(self)
@@ -215,17 +228,17 @@ class TemporalColumn(Column):
         self.top = descr['top']
 
     def get_summary(self) -> dict:
-        summary = {}
-        summary['name'] = self.name
-        summary['count'] = self.count
-        summary['missing'] = self.missing
-        summary['data_type'] = self.data_type
-        summary['min'] = self.min
-        summary['max'] = self.max
-        summary['unique'] = self.unique
-        summary['top'] = self.top
-        return summary
-
+        return {
+            'name': self.name,
+            'count': self.count,
+            'missing': self.missing,
+            'data_type': self.data_type,
+            'min': self.min,
+            'max': self.max,
+            'unique': self.unique,
+            'top': self.top
+        }
+        
     def perform_check(self) -> dict:
         return check_temporal_column(self)
 
@@ -237,13 +250,13 @@ class BooleanColumn(Column):
         self.top = raw_column.value_counts().idxmax()
  
     def get_summary(self) -> dict:
-        summary = {}
-        summary['name'] = self.name
-        summary['count'] = self.count
-        summary['missing'] = self.missing
-        summary['data_type'] = self.data_type
-        summary['top'] = self.top
-        return summary
+        return {
+            'name': self.name,
+            'count': self.count,
+            'missing': self.missing,
+            'data_type': self.data_type,
+            'top': self.top
+        }
 
     def perform_check(self) -> dict:
         return check_boolean_column(self)

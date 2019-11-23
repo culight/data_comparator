@@ -32,3 +32,5 @@ class Comparison:
         self.col2 = col2
         self.name = col1.name + '-' + col2.name
     
+    def _create_diff_column():
+        pass
