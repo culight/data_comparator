@@ -125,19 +125,18 @@ class Dataset(object):
         print("\nPreparing columns...")
         if  len(self.dataframe.columns) == 0:
             raise TypeError('No columns found for this dataframe')
-        columns = {}
         for raw_col_name in self.dataframe.columns:
             raw_column = self.dataframe[raw_col_name]
             if re.search(r'(int)', str(raw_column.dtype)):
-                self.columns[raw_col_name] = NumericColumn(raw_column)
+                self.columns[raw_col_name] = NumericColumn(raw_column, self.name)
             if re.search(r'(float)', str(raw_column.dtype)):
-                self.columns[raw_col_name] = NumericColumn(raw_column)
-            if re.search(r'(str)', str(raw_column.dtype)) or raw_column.dtype == 'O':
-                self.columns[raw_col_name] = StringColumn(raw_column)
+                self.columns[raw_col_name] = NumericColumn(raw_column, self.name)
+            if re.search(r'(str)', str(raw_column.dtype)) or str(raw_column.dtype) == 'object':
+                self.columns[raw_col_name] = StringColumn(raw_column, self.name)
             if re.search(r'(time)', str(raw_column.dtype)):
-                self.columns[raw_col_name] = TemporalColumn(raw_column)
+                self.columns[raw_col_name] = TemporalColumn(raw_column, self.name)
             if re.search(r'(bool)', str(raw_column.dtype)):
-                self.columns[raw_col_name] = BooleanColumn(raw_column)
+                self.columns[raw_col_name] = BooleanColumn(raw_column, self.name)
     
     def get_summary(self):
         return {
@@ -149,10 +148,31 @@ class Dataset(object):
             'load_time': self.load_time
         }
         
-   
+    def get_cols_oftype(self, data_type):
+        string_aliases = ['object', 'str', 'o']
+        numeric_aliases = ['number', 'n']
+        temporal_aliases = ['time', 'datetime', 'date', 't'],
+        boolean_aliases = ['bool', 'b']
+        
+        if data_type in string_aliases:
+            data_type = 'string'
+        elif data_type in numeric_aliases:
+            data_type = 'numeric'
+        elif data_type in temporal_aliases:
+            data_type = 'temporal'
+        elif data_type in boolean_aliases:
+            data_type = 'boolean'
+            
+        cols_oftype = {}
+        for col_name, col in self.columns.items():
+            if data_type.lower() in col.data_type.lower():
+                cols_oftype[col_name] = col
+        
+        return cols_oftype
+                
 class Column(object):
-    def __init__(self, raw_column):
-        self.name = raw_column.name
+    def __init__(self, raw_column, name):
+        self.name = name
         self.count = raw_column.count()
         self.missing = raw_column.isnull().sum()
         self.data = raw_column
@@ -163,8 +183,8 @@ class Column(object):
 
 
 class StringColumn(Column):
-    def __init__(self, raw_column):
-        Column.__init__(self, raw_column)
+    def __init__(self, raw_column, name):
+        Column.__init__(self, raw_column, name)
         self.data_type = self.__class__.__name__
         self.text_length_mean = raw_column.str.len().mean()
         self.text_length_std = raw_column.str.len().std()
@@ -191,8 +211,8 @@ class StringColumn(Column):
 
 
 class NumericColumn(Column):
-    def __init__(self, raw_column):
-        Column.__init__(self, raw_column)
+    def __init__(self, raw_column, name):
+        Column.__init__(self, raw_column, name)
         self.data_type = self.__class__.__name__
         self.min = raw_column.min()
         self.max = raw_column.max()
@@ -218,8 +238,8 @@ class NumericColumn(Column):
 
 
 class TemporalColumn(Column):
-    def __init__(self, raw_column):
-        Column.__init__(self, raw_column)
+    def __init__(self, raw_column, name):
+        Column.__init__(self, raw_column, name)
         self.data_type = self.__class__.__name__
         self.min = raw_column.min()
         self.max = raw_column.max()
@@ -244,8 +264,8 @@ class TemporalColumn(Column):
 
 
 class BooleanColumn(Column):
-    def __init__(self, raw_column):
-        Column.__init__(self, raw_column)
+    def __init__(self, raw_column, name):
+        Column.__init__(self, raw_column, name)
         self.data_type = self.__class__.__name__
         self.top = raw_column.value_counts().idxmax()
  
