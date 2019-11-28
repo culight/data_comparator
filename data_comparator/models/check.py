@@ -20,7 +20,8 @@ def check_string_column(column):
         'numeric_data': False,
         'odd_text_length_diff': False,
         'special_char': False,
-        'temporal_data': False
+        'temporal_data': False,
+        'bytes_data': False
     }
 
     print('\nPerforming check for string column...')
@@ -29,6 +30,11 @@ def check_string_column(column):
         # check for missing data
         if pd.isnull(row_content):
             continue
+        
+        # check for byte type
+        if type(row_content) == bytes:
+            string_checks['bytes_data'] = True
+            row_content = row_content.decode()
             
         # check for numeric data
         try:
