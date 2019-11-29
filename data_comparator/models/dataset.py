@@ -17,13 +17,14 @@ logging.basicConfig(format='%(asctime)s - %(message)s')
 
 ACCEPTED_INPUT_FORMATS = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas', 'json']
 
+
 class Dataset(object):
     def __init__(self, data_src: object, name: str, **load_params):
         self.path = None
         self.input_format = ''
         self.size = ''
-        self.dataframe = None
         self.columns = {}
+        self.dataframe = None
         self.name = name
         self.load_time = 0.0
         try:
@@ -31,12 +32,12 @@ class Dataset(object):
             self.path = Path(data_src)
             self.input_format = self._get_input_format()
             self.size = self._get_data_size(data_src)
-            self.dataframe = self.load_data_frompath(**load_params)
+            self.dataframe = self._load_data_frompath(**load_params)
         except TypeError:
             # probably an dataframe object
             self.input_format = str(data_src.__class__)
             if 'DataFrame' in self.input_format:
-                self.dataframe = self.load_data_fromdf(
+                self.dataframe = self._load_data_fromdf(
                     data_src
                 )
                 # count object types in size
@@ -44,6 +45,22 @@ class Dataset(object):
 
         # try to categorize the columns
         self._prepare_columns()
+        
+    def __getitem__(self, item):
+        try:
+            col = self.columns[item]
+            return col
+        except KeyError:
+            print('Item {} was not found'.format(item))
+    
+    def __delitem__(self, key):
+        del self.columns[key]
+        
+    def __iter__(self):
+        return iter(self.columns)
+    
+    def __len__(self):
+        len(self.columns)
 
     def _get_input_format(self) -> str:
         suffix = self.path.suffix.replace('.', '')
@@ -89,7 +106,7 @@ class Dataset(object):
         formatted_size = self._format_size(size)
         return formatted_size
 
-    def load_data_frompath(self, **load_params) -> pd.DataFrame:
+    def _load_data_frompath(self, **load_params) -> pd.DataFrame:
         print('\nLoading raw data into dataset object...')
         data = None
         start_time = datetime.now()
@@ -107,7 +124,7 @@ class Dataset(object):
         self.load_time = str(end_time - start_time)
         return data
 
-    def load_data_fromdf(self, df) -> pd.DataFrame:
+    def _load_data_fromdf(self, df) -> pd.DataFrame:
         print('\nLoading raw data into dataset object...')
         data = None
         start_time = datetime.now()
@@ -144,7 +161,7 @@ class Dataset(object):
             'format': self.input_format,
             'size': self.size,
             'columns': self.columns,
-            'name': self.name,
+            'ds_name': self.name,
             'load_time': self.load_time
         }
         
@@ -169,22 +186,24 @@ class Dataset(object):
                 cols_oftype[col_name] = col
         
         return cols_oftype
+         
                 
 class Column(object):
-    def __init__(self, raw_column, name):
-        self.name = name
+    def __init__(self, raw_column, ds_name):
+        self.ds_name = ds_name
         self.count = raw_column.count()
         self.missing = raw_column.isnull().sum()
         self.data = raw_column
         self.invalid = 0
+        self.name = raw_column.name
   
     def __eq__(self, other_col):
         return other_col.__class__ == self.__class__
 
 
 class StringColumn(Column):
-    def __init__(self, raw_column, name):
-        Column.__init__(self, raw_column, name)
+    def __init__(self, raw_column, ds_name):
+        Column.__init__(self, raw_column, ds_name)
         self.data_type = self.__class__.__name__
         self.text_length_mean = raw_column.str.len().mean()
         self.text_length_std = raw_column.str.len().std()
@@ -195,6 +214,7 @@ class StringColumn(Column):
 
     def get_summary(self) -> dict:
         return {
+            'ds_name': self.ds_name,
             'name': self.name,
             'count': self.count,
             'missing': self.missing,
@@ -211,8 +231,8 @@ class StringColumn(Column):
 
 
 class NumericColumn(Column):
-    def __init__(self, raw_column, name):
-        Column.__init__(self, raw_column, name)
+    def __init__(self, raw_column, ds_name):
+        Column.__init__(self, raw_column, ds_name)
         self.data_type = self.__class__.__name__
         self.min = raw_column.min()
         self.max = raw_column.max()
@@ -222,6 +242,7 @@ class NumericColumn(Column):
 
     def get_summary(self) -> dict:
         return {
+            'ds_name': self.ds_name,
             'name': self.name,
             'count': self.count,
             'missing': self.missing,
@@ -238,8 +259,8 @@ class NumericColumn(Column):
 
 
 class TemporalColumn(Column):
-    def __init__(self, raw_column, name):
-        Column.__init__(self, raw_column, name)
+    def __init__(self, raw_column, ds_name):
+        Column.__init__(self, raw_column, ds_name)
         self.data_type = self.__class__.__name__
         self.min = raw_column.min()
         self.max = raw_column.max()
@@ -249,6 +270,7 @@ class TemporalColumn(Column):
 
     def get_summary(self) -> dict:
         return {
+            'ds_name': self.ds_name,
             'name': self.name,
             'count': self.count,
             'missing': self.missing,
@@ -264,13 +286,14 @@ class TemporalColumn(Column):
 
 
 class BooleanColumn(Column):
-    def __init__(self, raw_column, name):
-        Column.__init__(self, raw_column, name)
+    def __init__(self, raw_column, ds_name):
+        Column.__init__(self, raw_column, ds_name)
         self.data_type = self.__class__.__name__
         self.top = raw_column.value_counts().idxmax()
  
     def get_summary(self) -> dict:
         return {
+            'ds_name': self.ds_name,
             'name': self.name,
             'count': self.count,
             'missing': self.missing,

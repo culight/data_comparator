@@ -28,7 +28,7 @@ class Comparison:
                      col2.name, col2.data_type
                 )
             )
-        print("Initializing comparison for '{}' and '{}'... ".format(col1.name, col2.name))
+        print("\nInitializing comparison for '{}' and '{}'... ".format(col1.name, col2.name))
         
         self.col1 = col1
         self.col2 = col2

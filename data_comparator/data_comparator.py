@@ -160,16 +160,23 @@ def _get_compare_df(comp: Comparison, col1_checks: dict, col2_checks: dict, add_
             len(col1_values), col1.name, len(col2_values), col2.name
         )
 
+    if comp.col1.name == comp.col2.name:
+        col1_name = comp.col1.name + '1'
+        col2_name = comp.col2.name + '2'
+    else:
+        col1_name = comp.col1.name
+        col2_name = comp.col2.name
+        
     if add_diff_col:
         data = {
-            comp.col1.name: col1_values,
-            comp.col2.name: col2_values,
+            col1_name: col1_values,
+            col2_name: col2_values,
             'diff_col': comp.create_diff_column()
         }
     else:
         data = {
-            comp.col1.name: col1_values,
-            comp.col2.name: col2_values
+            col1_name: col1_values,
+            col2_name: col2_values
         }
         
     _df = pd.DataFrame(
@@ -186,7 +193,6 @@ def compare(
         ds_pair2: tuple,
         ds_names: list=None,
         ds_params_list: list=None,
-        raw_data: bool=True,
         perform_check: bool=False,
         compare: bool=True,
         save_comp: bool=True,
@@ -197,23 +203,65 @@ def compare(
         'First dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
     assert ds_pair2 and isinstance(ds_pair2, tuple) and len(ds_pair2) == 2, \
         'Second dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
+ 
+    # need to first process raw data sources into dataset objects
+    data_src1 = ds_pair1[0]
+    data_src2 = ds_pair2[0]
+    ds1, ds2 = load_datasets(
+        data_src1, 
+        data_src2,
+        data_source_names=ds_names,
+        load_params_list=[{}, {}]
+    )
     
-    ds1 = None
-    ds2 = None
-    if raw_data:
-        # need to first process raw data sources into dataset objects
-        data_src1 = ds_pair1[0]
-        data_src2 = ds_pair2[0]
-        ds1, ds2 = load_datasets(
-            data_src1, 
-            data_src2,
-            data_source_names=ds_names,
-            load_params_list=[{}, {}]
-        )
-    else:
-        # dataset objects have been passed directly
-        ds1 = ds_pair1[0]
-        ds2 = ds_pair2[0]
+    assert ds1 and ds2, "There was an issue loading a dataset object"
+    
+    col_name1 = ds_pair1[1]
+    col_name2 = ds_pair2[1]
+    
+    assert col_name1 in ds1.columns, \
+        '{} is not a valid column in dataset {}'.format(col_name1, ds1)
+    assert col_name2 in ds2.columns, \
+        '{} is not a valid column in dataset {}'.format(col_name2, ds2)
+        
+    col1 = ds1.columns[col_name1]
+    col2 = ds2.columns[col_name2]
+    col1_checks = {}
+    col2_checks = {}
+    
+    if perform_check:
+        col1_checks = col1.perform_check()
+        col2_checks = col2.perform_check()
+    
+    _comp = Comparison(col1, col2)
+    
+    if save_comp:
+        COMPARISONS[_comp.name] = _comp
+    
+    if compare:
+        _df = _get_compare_df(_comp, col1_checks, col2_checks, add_diff_col)
+        return _df
+    
+    return _comp
+
+
+def compare_datasets(
+        ds_pair1: tuple,
+        ds_pair2: tuple,
+        perform_check: bool=False,
+        compare: bool=True,
+        save_comp: bool=True,
+        add_diff_col: bool=False
+    ):
+
+    assert ds_pair1 and isinstance(ds_pair1, tuple) and len(ds_pair1) == 2, \
+        'First dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
+    assert ds_pair2 and isinstance(ds_pair2, tuple) and len(ds_pair2) == 2, \
+        'Second dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
+
+    # dataset objects have been passed directly
+    ds1 = ds_pair1[0]
+    ds2 = ds_pair2[0]
     
     assert ds1 and ds2, "There was an issue loading a dataset object"
     
@@ -273,11 +321,9 @@ def clear_comparisons():
     COMPARISONS = {}
      
 
-def profile(dataset, col_list):
-    assert dataset and isinstance(dataset.__class__, Dataset.__class__), \
-        'ERROR: At least one valid dataset must be provided'
-    assert col_list and isinstance(col_list, list), \
-        'ERROR: Columns must be provided in a list format'
+def profile(data_source, cols: list):
+    assert ds_pair and isinstance(ds_pair, tuple) and len(ds_pair) == 2, \
+        'First dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
 
     if '*' in col_list:
         for col in dataset.columns:
