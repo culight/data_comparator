@@ -15,10 +15,10 @@ from models.comparison import Comparison
 
 logging.basicConfig(format='%(asctime)s - %(message)s')
 
-DATASETS = {}
-COMPARISONS = {}
-COMP_DF = {}
-PROFILE = {}
+_DATASETS = {}
+_COMPARISONS = {}
+_COMP_DF = {}
+_PROFILE = {}
 
 
 def load_dataset(
@@ -45,7 +45,7 @@ def load_dataset(
     if data_source_name:
         src_name = data_source_name
     else:
-        dataset_index = len(DATASETS)
+        dataset_index = len(_DATASETS)
         src_name = 'dataset_' + str(dataset_index)
 
     print(
@@ -57,7 +57,7 @@ def load_dataset(
         name=src_name, 
         **load_params
     )
-    DATASETS[src_name] = dataset
+    _DATASETS[src_name] = dataset
     
     print("\nDone")
 
@@ -91,7 +91,7 @@ def load_datasets(
             except IndexError:
                 print('Number of names must match number of data sources')
         else:
-            dataset_index = len(DATASETS)
+            dataset_index = len(_DATASETS)
             src_name = 'dataset_' + str(dataset_index)
             src_names.append(src_name)
 
@@ -112,27 +112,27 @@ def load_datasets(
             )
 
         print("\nCreating dataset '{}'".format(src_name))
-        DATASETS[src_name] = dataset
+        _DATASETS[src_name] = dataset
         print('\nDone')
     
     if not data_source_names:
         data_source_names = src_names
 
-    return [DATASETS[ds_name] for ds_name in data_source_names]
+    return [_DATASETS[ds_name] for ds_name in data_source_names]
 
 
 def get_datasets():
-    return DATASETS
+    return _DATASETS
 
 
 def get_dataset(ds_name):
-    return DATASETS[ds_name]
+    return _DATASETS[ds_name]
 
 
 def clear_datasets():
     """Removes all active datasets"""
     print("\nClearing all active datasets...")
-    DATASETS = {}
+    _DATASETS = {}
 
 
 def remove_dataset(src_name):
@@ -143,7 +143,7 @@ def remove_dataset(src_name):
     """
     try:
         print('Removing {}'.format(src_name))
-        del DATASETS[src_name]
+        del _DATASETS[src_name]
     except NameError:
         print('ERROR: Could not find dataset {}'.format(src_name))
 
@@ -166,12 +166,13 @@ def _get_compare_df(comp: Comparison, col1_checks: dict, col2_checks: dict, add_
     else:
         col1_name = comp.col1.name
         col2_name = comp.col2.name
-        
+
     if add_diff_col:
+        checks_added = (len(col1_checks) == len(col2_checks)) and (len(col1_checks) > 0) 
         data = {
             col1_name: col1_values,
             col2_name: col2_values,
-            'diff_col': comp.create_diff_column()
+            'diff_col': comp.create_diff_column(checks_added=checks_added)
         }
     else:
         data = {
@@ -183,7 +184,7 @@ def _get_compare_df(comp: Comparison, col1_checks: dict, col2_checks: dict, add_
         data,
         index=col_keys
     )
-    COMP_DF[comp.name] = _df
+    _COMP_DF[comp.name] = _df
     
     return _df
         
@@ -213,9 +214,7 @@ def compare(
         data_source_names=ds_names,
         load_params_list=[{}, {}]
     )
-    
-    assert ds1 and ds2, "There was an issue loading a dataset object"
-    
+        
     col_name1 = ds_pair1[1]
     col_name2 = ds_pair2[1]
     
@@ -236,7 +235,7 @@ def compare(
     _comp = Comparison(col1, col2)
     
     if save_comp:
-        COMPARISONS[_comp.name] = _comp
+        _COMPARISONS[_comp.name] = _comp
     
     if compare:
         _df = _get_compare_df(_comp, col1_checks, col2_checks, add_diff_col)
@@ -245,7 +244,7 @@ def compare(
     return _comp
 
 
-def compare_datasets(
+def compare_dataset(
         ds_pair1: tuple,
         ds_pair2: tuple,
         perform_check: bool=False,
@@ -263,7 +262,10 @@ def compare_datasets(
     ds1 = ds_pair1[0]
     ds2 = ds_pair2[0]
     
-    assert ds1 and ds2, "There was an issue loading a dataset object"
+    assert isinstance(ds_pair1.__class__, Dataset.__class__), \
+        "First data source must be of type 'Dataset'"
+    assert isinstance(ds_pair2.__class__, Dataset.__class__), \
+        "Second data source must be of type 'Dataset'"
     
     col_name1 = ds_pair1[1]
     col_name2 = ds_pair2[1]
@@ -285,7 +287,7 @@ def compare_datasets(
     _comp = Comparison(col1, col2)
     
     if save_comp:
-        COMPARISONS[_comp.name] = _comp
+        _COMPARISONS[_comp.name] = _comp
     
     if compare:
         _df = _get_compare_df(_comp, col1_checks, col2_checks, add_diff_col)
@@ -295,11 +297,11 @@ def compare_datasets(
 
 
 def get_comparisons():
-    return COMPARISONS
+    return _COMPARISONS
 
 
 def get_comparison(comp_name):
-    return COMPARISONS[comp_name]
+    return _COMPARISONS[comp_name]
 
 
 def remove_comparison(comp_name):
@@ -310,7 +312,7 @@ def remove_comparison(comp_name):
     """
     try:
         print('Removing comparison {}'.format(comp_name))
-        del COMPARISONS[comp_name]
+        del _COMPARISONS[comp_name]
     except NameError:
         print('ERROR: Could not find comparison {}'.format(comp_name))
 
@@ -318,23 +320,32 @@ def remove_comparison(comp_name):
 def clear_comparisons():
     """Removes all active copmarisons"""
     print("\nClearing all active comparisons...")
-    COMPARISONS = {}
+    _COMPARISONS = {}
      
 
-def profile(data_source, cols: list):
-    assert ds_pair and isinstance(ds_pair, tuple) and len(ds_pair) == 2, \
-        'First dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
+def profile(dataset: Dataset, col_list: list, name: str=None):
+    assert dataset and isinstance(dataset.__class__, Dataset.__class__), \
+        "Data source must be of type 'Dataset'"
 
+    ds_profile = {}
     if '*' in col_list:
         for col in dataset.columns:
-            PROFILE[col.name] = col.get_summary()
+            col = dataset.columns[col_name]
+            col_full = dataset.name + '.' + col.name
+            ds_profile[col_full] = col.get_summary()
             
     for col_name in col_list:
         col = dataset.columns[col_name]
         col_full = dataset.name + '.' + col.name
-        PROFILE[col_full] = col.get_summary()
+        ds_profile[col_full] = col.get_summary()
+
+    if str:
+        _PROFILE[name] = ds_profile
+    else:
+        profile_name = 'profile_' + len(_PROFILE)
+        _PROFILE[profile_name] = ds_profile
         
-    return PROFILE
+    return ds_profile
     
           
 def clear_all():
@@ -344,7 +355,7 @@ def clear_all():
 
 
 def view(comp_name):
-    print(COMP_DF[comp_name])
+    print(_COMP_DF[comp_name])
 
 
 def main():

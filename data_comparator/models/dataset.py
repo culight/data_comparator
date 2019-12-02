@@ -226,8 +226,8 @@ class StringColumn(Column):
             'top': self.top
         }
 
-    def perform_check(self) -> dict:
-        return check_string_column(self)
+    def perform_check(self, row_limit=-1) -> dict:
+        return check_string_column(self, row_limit)
 
 
 class NumericColumn(Column):

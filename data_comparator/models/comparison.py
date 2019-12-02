@@ -28,19 +28,24 @@ class Comparison:
                      col2.name, col2.data_type
                 )
             )
-        print("\nInitializing comparison for '{}' and '{}'... ".format(col1.name, col2.name))
+        print("\nComparing '{}' and '{}'... ".format(col1.name, col2.name))
         
         self.col1 = col1
         self.col2 = col2
         self.name = col1.name + '-' + col2.name
     
-    def create_diff_column(self):
+    def create_diff_column(self, checks_added: bool=False):
         assert self.col1 and self.col2, 'Two columns must be provided to create diff column'
         
-        measures1 = {**self.col1.get_summary(), **self.col1.perform_check()}
-        measures2 = {**self.col2.get_summary(), **self.col2.perform_check()}
-        keys = list(self.col1.get_summary().keys()) + list(self.col1.perform_check().keys())
-        
+        if checks_added:
+            measures1 = {**self.col1.get_summary(), **self.col1.perform_check()}
+            measures2 = {**self.col2.get_summary(), **self.col2.perform_check()}
+            keys = list(self.col1.get_summary().keys()) + list(self.col1.perform_check().keys())
+        else:
+            measures1 = {**self.col1.get_summary()}
+            measures2 = {**self.col2.get_summary()}
+            keys = list(self.col1.get_summary().keys())
+
         diff_list = []
         for key in keys:
             try:
