@@ -64,6 +64,7 @@ class Dataset(object):
 
     def _get_input_format(self) -> str:
         suffix = self.path.suffix.replace('.', '')
+        print(suffix)
         if suffix not in ACCEPTED_INPUT_FORMATS:
             raise ValueError('File type not supported')
         return suffix
@@ -208,9 +209,10 @@ class StringColumn(Column):
         self.text_length_mean = raw_column.str.len().mean()
         self.text_length_std = raw_column.str.len().std()
         self.text_length_med = raw_column.str.len().median()
-        self.unique = raw_column.nunique()
+        descr = raw_column.describe()
+        self.unique = descr['unique']
         self.duplicates = self.count - self.unique
-        self.top = raw_column.value_counts().idxmax()
+        self.top = descr['top']
 
     def get_summary(self) -> dict:
         return {

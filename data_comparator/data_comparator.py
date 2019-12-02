@@ -324,7 +324,7 @@ def clear_comparisons():
      
 
 def profile(dataset: Dataset, col_list: list, name: str=None):
-    assert dataset and isinstance(dataset.__class__, Dataset.__class__), \
+    assert isinstance(dataset.__class__, Dataset.__class__), \
         "Data source must be of type 'Dataset'"
 
     ds_profile = {}
