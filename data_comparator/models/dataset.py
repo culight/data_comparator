@@ -64,7 +64,6 @@ class Dataset(object):
 
     def _get_input_format(self) -> str:
         suffix = self.path.suffix.replace('.', '')
-        print(suffix)
         if suffix not in ACCEPTED_INPUT_FORMATS:
             raise ValueError('File type not supported')
         return suffix
