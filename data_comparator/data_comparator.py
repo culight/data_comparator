@@ -10,7 +10,7 @@
 import logging
 import sys
 import pandas as pd
-from models.dataset import Dataset
+from models.dataset import Dataset, Column
 from models.comparison import Comparison
 
 logging.basicConfig(format='%(asctime)s - %(message)s')
@@ -218,7 +218,7 @@ def _get_compare_df(comp: Comparison, col1_checks: dict, col2_checks: dict, add_
         data,
         index=col_keys
     )
-    _COMP_DF[comp.name] = _df
+    comp.set_dataframe(_df)
     
     return _df
         
@@ -229,7 +229,6 @@ def compare(
         ds_names: list=None,
         ds_params_list: list=None,
         perform_check: bool=False,
-        compare: bool=True,
         save_comp: bool=True,
         add_diff_col: bool=False
     ):
@@ -284,32 +283,26 @@ def compare(
         col2_checks = col2.perform_check()
     
     _comp = Comparison(col1, col2)
+    _df = _get_compare_df(_comp, col1_checks, col2_checks, add_diff_col)
     
     if save_comp:
         _COMPARISONS[_comp.name] = _comp
     
-    if compare:
-        _df = _get_compare_df(_comp, col1_checks, col2_checks, add_diff_col)
-        return _df
-    
-    return _comp
+    return _df
 
 
-def compare_datasets(
-        ds_pair1: tuple,
-        ds_pair2: tuple,
+def compare_ds(
+        col1: Column,
+        col2: Column,
         perform_check: bool=False,
-        compare: bool=True,
         save_comp: bool=True,
         add_diff_col: bool=False
     ):
     """
     A function for comparing two dataset objects
     Parameters:
-        ds_pair1: Tuple with first data source and \
-            desired column e.g. ('stocks.parquet', 'price')
-        ds_pair2: Tuple with second data source and \
-            desired column e.g. ('stocks.parquet', 'price')
+        col1: Desired column to compare to
+        col2: Desired columns to compare against
         ds_names: List with custom names for ds_pairs. Must provide two names.
         ds_params_list: List with load params for each dataset.
         perform_check: Set as True to perform check for the columns
@@ -321,30 +314,11 @@ def compare_datasets(
     Output:
         Dataframe of compared variables
     """
-    assert ds_pair1 and isinstance(ds_pair1, tuple) and len(ds_pair1) == 2, \
-        'First dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
-    assert ds_pair2 and isinstance(ds_pair2, tuple) and len(ds_pair2) == 2, \
-        'Second dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
-
-    # dataset objects have been passed directly
-    ds1 = ds_pair1[0]
-    ds2 = ds_pair2[0]
-    
-    assert isinstance(ds_pair1.__class__, Dataset.__class__), \
-        "First data source must be of type 'Dataset'"
-    assert isinstance(ds_pair2.__class__, Dataset.__class__), \
-        "Second data source must be of type 'Dataset'"
-    
-    col_name1 = ds_pair1[1]
-    col_name2 = ds_pair2[1]
-    
-    assert col_name1 in ds1.columns, \
-        '{} is not a valid column in dataset {}'.format(col_name1, ds1)
-    assert col_name2 in ds2.columns, \
-        '{} is not a valid column in dataset {}'.format(col_name2, ds2)
+    assert isinstance(col1, Column), \
+        'Column 1 is not a valid column'
+    assert isinstance(col2, Column), \
+        'Column 2 is not a valid column'
         
-    col1 = ds1.columns[col_name1]
-    col2 = ds2.columns[col_name2]
     col1_checks = {}
     col2_checks = {}
     
@@ -353,15 +327,12 @@ def compare_datasets(
         col2_checks = col2.perform_check()
     
     _comp = Comparison(col1, col2)
+    _df = _get_compare_df(_comp, col1_checks, col2_checks, add_diff_col)
     
     if save_comp:
         _COMPARISONS[_comp.name] = _comp
     
-    if compare:
-        _df = _get_compare_df(_comp, col1_checks, col2_checks, add_diff_col)
-        return _df
-    
-    return _comp
+    return _df
 
 
 def get_comparisons():
@@ -398,7 +369,6 @@ def profile(dataset: Dataset, col_list: list, name: str=None):
     ds_profile = {}
     if '*' in col_list:
         for col in dataset.columns:
-            col = dataset.columns[col_name]
             col_full = dataset.name + '.' + col.name
             ds_profile[col_full] = col.get_summary()
             
@@ -423,7 +393,7 @@ def clear_all():
 
 
 def view(comp_name):
-    print(_COMP_DF[comp_name])
+    print(_COMPARISONS[comp_name].dataframe)
 
 
 def main():

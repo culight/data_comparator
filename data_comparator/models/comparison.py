@@ -12,6 +12,9 @@ import pandas as pd
 import numpy as np
 from models.dataset import Dataset, Column
 
+_BAR_FIELDS = ['count', 'missing', 'unique']
+_BOXPLOT_FIELDS = ['min', 'max', 'std', 'mean', 'zeros']
+
 class Comparison:
     def __init__(self, col1, col2):
         
@@ -32,7 +35,12 @@ class Comparison:
         
         self.col1 = col1
         self.col2 = col2
+        self.data_type = col1.data_type
         self.name = col1.name + '-' + col2.name
+        self.dataframe = None
+    
+    def set_dataframe(self, dataframe: pd.DataFrame):
+        self.dataframe = dataframe
     
     def create_diff_column(self, checks_added: bool=False):
         assert self.col1 and self.col2, 'Two columns must be provided to create diff column'
@@ -57,3 +65,4 @@ class Comparison:
             diff_list.append(diff)
                 
         return diff_list
+            
