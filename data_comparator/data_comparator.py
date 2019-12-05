@@ -51,6 +51,11 @@ def load_dataset(
     print(
         "\nCreating dataset '{}' from source:\n '{}'".format(src_name, src)
     )
+    
+    ret_dataset = _recycle_dataset(data_source, **load_params)
+    if ret_dataset != None:
+        _DATASETS[src_name] = ret_dataset
+        return ret_dataset
 
     dataset = Dataset(
         data_src=src, 
@@ -129,6 +134,18 @@ def get_dataset(ds_name):
     return _DATASETS[ds_name]
 
 
+def _recycle_dataset(data_src, **load_params):
+    if len(load_params) > 0:
+        return None
+    
+    datasets = _DATASETS.copy()
+    for ds in datasets.values():
+        if str(ds.path) == data_src:
+            return ds
+    
+    return None
+
+            
 def clear_datasets():
     """Removes all active datasets"""
     print("\nClearing all active datasets...")
@@ -244,7 +261,7 @@ def compare(
     return _comp
 
 
-def compare_dataset(
+def compare_datasets(
         ds_pair1: tuple,
         ds_pair2: tuple,
         perform_check: bool=False,
