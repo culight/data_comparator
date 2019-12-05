@@ -8,9 +8,13 @@
 """
 import logging
 import itertools
+
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+
 from models.dataset import Dataset, Column
+
 
 _BAR_FIELDS = ['count', 'missing', 'unique']
 _BOXPLOT_FIELDS = ['min', 'max', 'std', 'mean', 'zeros']
@@ -36,7 +40,10 @@ class Comparison:
         self.col1 = col1
         self.col2 = col2
         self.data_type = col1.data_type
-        self.name = col1.name + '-' + col2.name
+        if col1.name == col2.name:
+            self.name = col1.ds_name + '.' + col1.name + '-' + col2.ds_name + '.' + col2.name
+        else:
+            self.name = col1.name + '-' + col2.name
         self.dataframe = None
     
     def set_dataframe(self, dataframe: pd.DataFrame):
@@ -66,3 +73,27 @@ class Comparison:
                 
         return diff_list
             
+    def plot(self):
+        boxplot_created = False
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        plt.ion()
+        
+        fig.show()
+        fig.canvas.draw()
+        
+        for i, measure in enumerate(self.dataframe.index):
+            ax.clear()
+            if measure in _BAR_FIELDS:
+                ax.plot.bar(self.dataframe.loc[measure])
+            elif measure in _BOXPLOT_FIELDS and not boxplot_created:
+                col1_name = self.name.split('-')[0]
+                col2_name = self.name.split('-')[1]
+                _df = pd.DataFrame({
+                    col1_name: self.col1.data,
+                    col2_name: self.col2.data
+                })
+                _df.boxplot(ax=axes[1,1])
+                boxplot_created = True
+            fig.canvas.show()
+                        
