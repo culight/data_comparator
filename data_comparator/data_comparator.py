@@ -20,14 +20,13 @@ _COMPARISONS = {}
 _COMP_DF = {}
 _PROFILE = {}
 
-
 def load_dataset(
         data_source,
         data_source_name: str='',
         **load_params
     ):
     """
-    Load a single data source to add to the set of active datasets
+    Load a single data source to add to the set of saved datasets
     Parameters:
         data_source: Object in the form of a csv, parquet, or sas path... or
         spark/pandas dataframe
@@ -36,11 +35,9 @@ def load_dataset(
     Output:
         Resulting dataset collection
     """
-    if data_source:
-        src = data_source
-    else:
-        print('ERROR: Valid data source must be provided')
-        return
+    assert data_source, 'Data source not provided'
+
+    src = data_source
 
     if data_source_name:
         src_name = data_source_name
@@ -70,14 +67,16 @@ def load_datasets(
         load_params_list: list=None
     ):
     """
-    Load multiple data sources to add to the set of active datasets
+    Load multiple data sources to add to the set of saved datasets
     Parameters:
         data_sources: Sequence of objects in the form of a csv, parquet, or sas path... or
-        spark/pandas dataframe
+            spark/pandas dataframe
         data_source_names: Tuple of custom name for the resulting dataset. Default will
-        be provided if null
+            be provided if null
+        load_params_list: list of load parameters for each dataset \
+            e.g. [{'cols': ['col1', col2']}, {}]
     Output:
-        Resulting dataset collection
+        Resulting datasets
     """
     assert data_sources, 'Valid data source must be provided'
     src_names = []
@@ -122,16 +121,33 @@ def load_datasets(
 
 
 def get_datasets():
+    """
+    Return all saved datasets
+    Parameters:
+    Output:
+        All saved datasets
+    """
     return _DATASETS
 
 
 def get_dataset(ds_name):
+    """
+    Return a particular dataset
+    Parameters: 
+        ds_name: dataset name
+    Output:
+        The specified dataset
+    """
     return _DATASETS[ds_name]
 
 
 def clear_datasets():
-    """Removes all active datasets"""
-    print("\nClearing all active datasets...")
+    """
+    Removes all saved datasets
+    Parameters:
+    Output:
+    """
+    print("\nClearing all saved datasets...")
     _DATASETS = {}
 
 
@@ -140,6 +156,7 @@ def remove_dataset(src_name):
     Removes the specified dataset from active datasets
     Parameters:
         src_name: Name of dataset to remove
+    Output:
     """
     try:
         print('Removing {}'.format(src_name))
@@ -199,7 +216,24 @@ def compare(
         save_comp: bool=True,
         add_diff_col: bool=False
     ):
-
+    """
+    A function for comparing two raw data sources
+    Parameters:
+        ds_pair1: Tuple with first data source and \
+            desired column e.g. ('stocks.parquet', 'price')
+        ds_pair2: Tuple with second data source and \
+            desired column e.g. ('stocks.parquet', 'price')
+        ds_names: List with custom names for ds_pairs. Must provide two names.
+        ds_params_list: List with load params for each dataset.
+        perform_check: Set as True to perform check for the columns
+        compare: Set as True to perform the comparison
+        save_comp: Set as True to save the comparison in a \
+            global variable
+        add_diff_col: Set as True to add a column showing the \
+            different between the two columns
+    Output:
+        Dataframe of compared variables
+    """
     assert ds_pair1 and isinstance(ds_pair1, tuple) and len(ds_pair1) == 2, \
         'First dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
     assert ds_pair2 and isinstance(ds_pair2, tuple) and len(ds_pair2) == 2, \
@@ -252,7 +286,24 @@ def compare_dataset(
         save_comp: bool=True,
         add_diff_col: bool=False
     ):
-
+    """
+    A function for comparing two dataset objects
+    Parameters:
+        ds_pair1: Tuple with first data source and \
+            desired column e.g. ('stocks.parquet', 'price')
+        ds_pair2: Tuple with second data source and \
+            desired column e.g. ('stocks.parquet', 'price')
+        ds_names: List with custom names for ds_pairs. Must provide two names.
+        ds_params_list: List with load params for each dataset.
+        perform_check: Set as True to perform check for the columns
+        compare: Set as True to perform the comparison
+        save_comp: Set as True to save the comparison in a \
+            global variable
+        add_diff_col: Set as True to add a column showing the \
+            different between the two columns
+    Output:
+        Dataframe of compared variables
+    """
     assert ds_pair1 and isinstance(ds_pair1, tuple) and len(ds_pair1) == 2, \
         'First dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
     assert ds_pair2 and isinstance(ds_pair2, tuple) and len(ds_pair2) == 2, \
@@ -314,7 +365,7 @@ def remove_comparison(comp_name):
         print('Removing comparison {}'.format(comp_name))
         del _COMPARISONS[comp_name]
     except NameError:
-        print('ERROR: Could not find comparison {}'.format(comp_name))
+        print('Could not find comparison {}'.format(comp_name))
 
 
 def clear_comparisons():
