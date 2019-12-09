@@ -15,7 +15,7 @@ from models.check import check_string_column, check_numeric_column, \
 
 logging.basicConfig(format='%(asctime)s - %(message)s')
 
-ACCEPTED_INPUT_FORMATS = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas', 'json']
+ACCEPTED_INPUT_FORMATS = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas', 'json', 'txt']
 
 
 class Dataset(object):
@@ -31,7 +31,7 @@ class Dataset(object):
             # probably a path string
             self.path = Path(data_src)
             self.input_format = self._get_input_format()
-            self.size = self._get_data_size(data_src)
+            self.size = self._get_data_size(data_src, **load_params)
             self.dataframe = self._load_data_frompath(**load_params)
         except TypeError:
             # probably an dataframe object
@@ -89,7 +89,7 @@ class Dataset(object):
 
         return size
 
-    def _get_data_size(self, data_src: object) -> int:
+    def _get_data_size(self, data_src: object, **load_params) -> int:
         size = 0
         if self.path.is_dir():
             for file in os.listdir(data_src):
@@ -97,10 +97,13 @@ class Dataset(object):
                 size += os.path.getsize(abs_path)
         else:
             size = os.path.getsize(data_src)
-
         if size < 1:
             raise ValueError('File size of {} is too small'.format(size))
-        if size > 800000000:
+        if size > 800000000 and 'chunksize' in list(load_params.keys()):
+            chunksize = load_params['chunksize']
+            if  chunksize > 200000000:
+                raise ValueError('chunksize {} is too large'.format(chunksize))
+        elif size > 800000000:
             raise ValueError('File size of {} is too large'.format(size))
         
         formatted_size = self._format_size(size)
@@ -114,6 +117,10 @@ class Dataset(object):
             data = pd.read_sas(str(self.path), **load_params)
         elif self.input_format == 'csv':
             data = pd.read_csv(str(self.path), **load_params)
+        elif self.input_format == 'txt':
+            if 'sep' not in list(load_params.keys()):
+                raise ValueError('Please provide a valid delimiter for this text file')
+            data = pd.read_table(str(self.path), **load_params)
         elif self.input_format == 'parquet':
             data = pd.read_parquet(str(self.path), **load_params)
         elif self.input_format == 'json':
@@ -211,7 +218,7 @@ class StringColumn(Column):
         descr = raw_column.describe()
         self.unique = descr['unique']
         self.duplicates = self.count - self.unique
-        self.top = descr['top']
+        #self.top = descr['top']
 
     def get_summary(self) -> dict:
         return {
@@ -224,7 +231,7 @@ class StringColumn(Column):
             'text_length_std': self.text_length_std,
             'unique': self.unique,
             'duplicates': self.duplicates,
-            'top': self.top
+            #'top': self.top
         }
 
     def perform_check(self, row_limit=-1) -> dict:
@@ -267,7 +274,7 @@ class TemporalColumn(Column):
         self.max = raw_column.max()
         descr = raw_column.describe()
         self.unique = descr['unique']
-        self.top = descr['top']
+        #self.top = descr['top']
 
     def get_summary(self) -> dict:
         return {
@@ -279,7 +286,7 @@ class TemporalColumn(Column):
             'min': self.min,
             'max': self.max,
             'unique': self.unique,
-            'top': self.top
+            #'top': self.top
         }
         
     def perform_check(self) -> dict:
@@ -290,7 +297,7 @@ class BooleanColumn(Column):
     def __init__(self, raw_column, ds_name):
         Column.__init__(self, raw_column, ds_name)
         self.data_type = self.__class__.__name__
-        self.top = raw_column.value_counts().idxmax()
+        #self.top = raw_column.value_counts().idxmax()
  
     def get_summary(self) -> dict:
         return {
@@ -299,7 +306,7 @@ class BooleanColumn(Column):
             'count': self.count,
             'missing': self.missing,
             'data_type': self.data_type,
-            'top': self.top
+            #top': self.top
         }
 
     def perform_check(self) -> dict:
