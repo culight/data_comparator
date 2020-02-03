@@ -166,6 +166,7 @@ def clear_datasets():
     """
     print("\nClearing all saved datasets...")
     _DATASETS = {}
+    print('\nDone')
 
 
 def remove_dataset(src_name):
@@ -180,6 +181,7 @@ def remove_dataset(src_name):
         del _DATASETS[src_name]
     except NameError:
         print('ERROR: Could not find dataset {}'.format(src_name))
+    print('\nDone')
 
 
 def _get_compare_df(comp: Comparison, col1_checks: dict, col2_checks: dict, add_diff_col):
@@ -354,12 +356,14 @@ def remove_comparison(comp_name):
         del _COMPARISONS[comp_name]
     except NameError:
         print('Could not find comparison {}'.format(comp_name))
+    print('\nDone')
 
 
 def clear_comparisons():
     """Removes all active copmarisons"""
     print("\nClearing all active comparisons...")
     _COMPARISONS = {}
+    print('\nDone')
      
 
 def profile(dataset: Dataset, col_list: list, name: str=None):
@@ -395,4 +399,3 @@ def clear_all():
 def view(comp_name):
     print(_COMPARISONS[comp_name].dataframe)
 
-    
