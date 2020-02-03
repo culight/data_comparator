@@ -155,6 +155,8 @@ class Dataset(object):
                     raw_column = pd.to_datetime(raw_column)
                 except ValueError:
                     pass
+                except OverflowError:
+                    raw_column = raw_column.astype('str')
         return raw_column
 
     def _prepare_columns(self):
@@ -173,8 +175,6 @@ class Dataset(object):
                 self.columns[raw_col_name] = TemporalColumn(raw_column, self.name)
             if re.search(r'(bool)', str(raw_column.dtype)):
                 self.columns[raw_col_name] = BooleanColumn(raw_column, self.name)
-
-
 
     def get_summary(self):
         return {
