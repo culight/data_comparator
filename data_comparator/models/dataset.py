@@ -10,8 +10,12 @@ from datetime import datetime
 from pathlib import Path
 import re
 import pandas as pd
-from models.check import check_string_column, check_numeric_column, \
-    check_boolean_column, check_temporal_column
+from models.check import (
+    check_string_column,
+    check_numeric_column,
+    check_boolean_column,
+    check_temporal_column
+)
 
 logging.basicConfig(format='%(asctime)s - %(message)s')
 
@@ -145,12 +149,20 @@ class Dataset(object):
         self.load_time = str(end_time - start_time)
         return data
 
+    def convert_dates(self, raw_column):
+        if raw_column.dtype == 'object':
+                try:
+                    raw_column = pd.to_datetime(raw_column)
+                except ValueError:
+                    pass
+        return raw_column
+
     def _prepare_columns(self):
         print("\nPreparing columns...")
         if  len(self.dataframe.columns) == 0:
             raise TypeError('No columns found for this dataframe')
         for raw_col_name in self.dataframe.columns:
-            raw_column = self.dataframe[raw_col_name]
+            raw_column = self.convert_dates(self.dataframe[raw_col_name])
             if re.search(r'(int)', str(raw_column.dtype)):
                 self.columns[raw_col_name] = NumericColumn(raw_column, self.name)
             if re.search(r'(float)', str(raw_column.dtype)):
@@ -161,7 +173,9 @@ class Dataset(object):
                 self.columns[raw_col_name] = TemporalColumn(raw_column, self.name)
             if re.search(r'(bool)', str(raw_column.dtype)):
                 self.columns[raw_col_name] = BooleanColumn(raw_column, self.name)
-    
+
+
+
     def get_summary(self):
         return {
             'path': self.path,

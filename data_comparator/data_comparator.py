@@ -395,11 +395,4 @@ def clear_all():
 def view(comp_name):
     print(_COMPARISONS[comp_name].dataframe)
 
-
-def main():
-    return 0
-
-
-if __name__ == '__main__':
-    main()
-    sys.exit(0)
+    
