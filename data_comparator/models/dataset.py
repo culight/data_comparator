@@ -150,10 +150,11 @@ class Dataset(object):
         return data
 
     def convert_dates(self, raw_column):
+        # print(raw_column)
         if raw_column.dtype == 'object':
                 try:
                     raw_column = pd.to_datetime(raw_column)
-                except (ValueError, TypeError):
+                except (ValueError, TypeError, AttributeError) as e:
                     pass
                 except OverflowError:
                     raw_column = raw_column.astype('str')
@@ -165,6 +166,7 @@ class Dataset(object):
             raise TypeError('No columns found for this dataframe')
         for raw_col_name in self.dataframe.columns:
             print(raw_col_name)
+            print(self.dataframe[raw_col_name])
             raw_column = self.convert_dates(self.dataframe[raw_col_name])
             if re.search(r'(int)', str(raw_column.dtype)):
                 self.columns[raw_col_name] = NumericColumn(raw_column, self.name)
