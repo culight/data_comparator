@@ -53,6 +53,7 @@ def load_dataset(
     ret_dataset = _recycle_dataset(data_source, **load_params)
     if ret_dataset != None:
         DATASETS[src_name] = ret_dataset
+        print('This dataset has already been loaded...')
         return ret_dataset
 
     dataset = Dataset(
@@ -150,6 +151,11 @@ def get_dataset(ds_name):
 
 
 def _recycle_dataset(data_src, **load_params):
+    """
+    Avoid using datasets that have already been loaded
+    Parameters: 
+    Output:  
+    """
     if len(load_params) > 0:
         return None
     
