@@ -1,4 +1,8 @@
 # ignore test data
 test_data/
 
+# ignore vs code stuff
+.vscode/
+
+# ignore extraneous python files
 __pycache__/

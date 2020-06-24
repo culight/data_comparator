@@ -10,12 +10,24 @@ from datetime import datetime
 from pathlib import Path
 import re
 import pandas as pd
-from models.check import check_string_column, check_numeric_column, \
-    check_boolean_column, check_temporal_column
+from components.check import (
+    check_string_column,
+    check_numeric_column,
+    check_boolean_column,
+    check_temporal_column
+)
 
 logging.basicConfig(format='%(asctime)s - %(message)s')
 
-ACCEPTED_INPUT_FORMATS = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas', 'json']
+ACCEPTED_INPUT_FORMATS = [
+    'sas7bdat',
+    'csv',
+    'parquet',
+    'pyspark',
+    'pandas',
+    'json',
+    'txt'
+]
 
 
 class Dataset(object):
@@ -31,7 +43,7 @@ class Dataset(object):
             # probably a path string
             self.path = Path(data_src)
             self.input_format = self._get_input_format()
-            self.size = self._get_data_size(data_src)
+            self.size = self._get_data_size(data_src, **load_params)
             self.dataframe = self._load_data_frompath(**load_params)
         except TypeError:
             # probably an dataframe object
@@ -89,7 +101,7 @@ class Dataset(object):
 
         return size
 
-    def _get_data_size(self, data_src: object) -> int:
+    def _get_data_size(self, data_src: object, **load_params) -> int:
         size = 0
         if self.path.is_dir():
             for file in os.listdir(data_src):
@@ -97,14 +109,29 @@ class Dataset(object):
                 size += os.path.getsize(abs_path)
         else:
             size = os.path.getsize(data_src)
-
         if size < 1:
             raise ValueError('File size of {} is too small'.format(size))
-        if size > 800000000:
+        if size > 800000000 and 'chunksize' in list(load_params.keys()):
+            chunksize = load_params['chunksize']
+            if  chunksize > 200000000:
+                raise ValueError('chunksize {} is too large'.format(chunksize))
+        elif size > 800000000:
             raise ValueError('File size of {} is too large'.format(size))
         
         formatted_size = self._format_size(size)
         return formatted_size
+
+    def _load_spark_df(self, df):
+        pd_df = pd.DataFrame()
+        for col in df.columns:
+            print(col)
+            try:
+                col_df = df.select(col).toPandas()
+                pd_df = pd.concat([pd_df, col_df], axis=1)
+            except Exception as e:
+                print(str(e))
+        
+        return pd_df
 
     def _load_data_frompath(self, **load_params) -> pd.DataFrame:
         print('\nLoading raw data into dataset object...')
@@ -113,9 +140,17 @@ class Dataset(object):
         if self.input_format == 'sas7bdat':
             data = pd.read_sas(str(self.path), **load_params)
         elif self.input_format == 'csv':
-            data = pd.read_csv(str(self.path), **load_params)
+            data = pd.read_csv(str(self.path), index_col=False, **load_params)
+        elif self.input_format == 'txt':
+            if 'sep' not in list(load_params.keys()):
+                raise ValueError('Please provide a valid delimiter for this text file')
+            data = pd.read_table(str(self.path), **load_params)
         elif self.input_format == 'parquet':
-            data = pd.read_parquet(str(self.path), **load_params)
+            data = pd.read_parquet(
+                str(self.path),
+                engine='pyarrow',
+                **load_params
+            )
         elif self.input_format == 'json':
             data = pd.read_json(str(self.path), **load_params)
         else:
@@ -129,7 +164,7 @@ class Dataset(object):
         data = None
         start_time = datetime.now()
         if 'pyspark' in self.input_format:
-            data = df.toPandas()
+            data = self._load_spark_df(df)
         elif 'pandas' in self.input_format:
             data = df
         else:
@@ -138,12 +173,24 @@ class Dataset(object):
         self.load_time = str(end_time - start_time)
         return data
 
+    def convert_dates(self, raw_column):
+        # print(raw_column)
+        if raw_column.dtype == 'object':
+                try:
+                    raw_column = pd.to_datetime(raw_column)
+                except (ValueError, TypeError, AttributeError) as e:
+                    pass
+                except OverflowError:
+                    raw_column = raw_column.astype('str')
+        return raw_column
+
     def _prepare_columns(self):
         print("\nPreparing columns...")
         if  len(self.dataframe.columns) == 0:
             raise TypeError('No columns found for this dataframe')
         for raw_col_name in self.dataframe.columns:
-            raw_column = self.dataframe[raw_col_name]
+            print(raw_col_name)
+            raw_column = self.convert_dates(self.dataframe[raw_col_name])
             if re.search(r'(int)', str(raw_column.dtype)):
                 self.columns[raw_col_name] = NumericColumn(raw_column, self.name)
             if re.search(r'(float)', str(raw_column.dtype)):
@@ -154,7 +201,7 @@ class Dataset(object):
                 self.columns[raw_col_name] = TemporalColumn(raw_column, self.name)
             if re.search(r'(bool)', str(raw_column.dtype)):
                 self.columns[raw_col_name] = BooleanColumn(raw_column, self.name)
-    
+
     def get_summary(self):
         return {
             'path': self.path,
@@ -166,11 +213,11 @@ class Dataset(object):
         }
         
     def get_cols_oftype(self, data_type):
-        string_aliases = ['object', 'str', 'o']
-        numeric_aliases = ['number', 'n']
-        temporal_aliases = ['time', 'datetime', 'date', 't'],
-        boolean_aliases = ['bool', 'b']
-        
+        string_aliases = ('object', 'str', 'o')
+        numeric_aliases = ('number', 'n', 'int', 'float')
+        temporal_aliases = ('time', 'datetime', 'date', 't')
+        boolean_aliases = ('bool', 'b', 'boolean')
+        print(numeric_aliases)
         if data_type in string_aliases:
             data_type = 'string'
         elif data_type in numeric_aliases:
@@ -211,7 +258,7 @@ class StringColumn(Column):
         descr = raw_column.describe()
         self.unique = descr['unique']
         self.duplicates = self.count - self.unique
-        self.top = descr['top']
+        #self.top = descr['top']
 
     def get_summary(self) -> dict:
         return {
@@ -224,7 +271,7 @@ class StringColumn(Column):
             'text_length_std': self.text_length_std,
             'unique': self.unique,
             'duplicates': self.duplicates,
-            'top': self.top
+            #'top': self.top
         }
 
     def perform_check(self, row_limit=-1) -> dict:
@@ -267,7 +314,7 @@ class TemporalColumn(Column):
         self.max = raw_column.max()
         descr = raw_column.describe()
         self.unique = descr['unique']
-        self.top = descr['top']
+        #self.top = descr['top']
 
     def get_summary(self) -> dict:
         return {
@@ -279,7 +326,7 @@ class TemporalColumn(Column):
             'min': self.min,
             'max': self.max,
             'unique': self.unique,
-            'top': self.top
+            #'top': self.top
         }
         
     def perform_check(self) -> dict:
@@ -290,7 +337,7 @@ class BooleanColumn(Column):
     def __init__(self, raw_column, ds_name):
         Column.__init__(self, raw_column, ds_name)
         self.data_type = self.__class__.__name__
-        self.top = raw_column.value_counts().idxmax()
+        #self.top = raw_column.value_counts().idxmax()
  
     def get_summary(self) -> dict:
         return {
@@ -299,7 +346,7 @@ class BooleanColumn(Column):
             'count': self.count,
             'missing': self.missing,
             'data_type': self.data_type,
-            'top': self.top
+            #top': self.top
         }
 
     def perform_check(self) -> dict:
