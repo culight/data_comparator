@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from models.dataset import Dataset, Column
+from components.dataset import Dataset, Column
 
 
 _BAR_FIELDS = ['count', 'missing', 'unique']
