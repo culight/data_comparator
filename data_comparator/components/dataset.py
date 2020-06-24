@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 import re
 import pandas as pd
-from models.check import (
+from components.check import (
     check_string_column,
     check_numeric_column,
     check_boolean_column,
@@ -19,7 +19,15 @@ from models.check import (
 
 logging.basicConfig(format='%(asctime)s - %(message)s')
 
-ACCEPTED_INPUT_FORMATS = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas', 'json', 'txt']
+ACCEPTED_INPUT_FORMATS = [
+    'sas7bdat',
+    'csv',
+    'parquet',
+    'pyspark',
+    'pandas',
+    'json',
+    'txt'
+]
 
 
 class Dataset(object):
@@ -113,6 +121,18 @@ class Dataset(object):
         formatted_size = self._format_size(size)
         return formatted_size
 
+    def _load_spark_df(self, df):
+        pd_df = pd.DataFrame()
+        for col in df.columns:
+            print(col)
+            try:
+                col_df = df.select(col).toPandas()
+                pd_df = pd.concat([pd_df, col_df], axis=1)
+            except Exception as e:
+                print(str(e))
+        
+        return pd_df
+
     def _load_data_frompath(self, **load_params) -> pd.DataFrame:
         print('\nLoading raw data into dataset object...')
         data = None
@@ -120,13 +140,17 @@ class Dataset(object):
         if self.input_format == 'sas7bdat':
             data = pd.read_sas(str(self.path), **load_params)
         elif self.input_format == 'csv':
-            data = pd.read_csv(str(self.path), **load_params)
+            data = pd.read_csv(str(self.path), index_col=False, **load_params)
         elif self.input_format == 'txt':
             if 'sep' not in list(load_params.keys()):
                 raise ValueError('Please provide a valid delimiter for this text file')
             data = pd.read_table(str(self.path), **load_params)
         elif self.input_format == 'parquet':
-            data = pd.read_parquet(str(self.path), **load_params)
+            data = pd.read_parquet(
+                str(self.path),
+                engine='pyarrow',
+                **load_params
+            )
         elif self.input_format == 'json':
             data = pd.read_json(str(self.path), **load_params)
         else:
@@ -140,7 +164,7 @@ class Dataset(object):
         data = None
         start_time = datetime.now()
         if 'pyspark' in self.input_format:
-            data = df.toPandas()
+            data = self._load_spark_df(df)
         elif 'pandas' in self.input_format:
             data = df
         else:
@@ -166,7 +190,6 @@ class Dataset(object):
             raise TypeError('No columns found for this dataframe')
         for raw_col_name in self.dataframe.columns:
             print(raw_col_name)
-            print(self.dataframe[raw_col_name])
             raw_column = self.convert_dates(self.dataframe[raw_col_name])
             if re.search(r'(int)', str(raw_column.dtype)):
                 self.columns[raw_col_name] = NumericColumn(raw_column, self.name)
@@ -190,11 +213,11 @@ class Dataset(object):
         }
         
     def get_cols_oftype(self, data_type):
-        string_aliases = ['object', 'str', 'o']
-        numeric_aliases = ['number', 'n']
-        temporal_aliases = ['time', 'datetime', 'date', 't'],
-        boolean_aliases = ['bool', 'b']
-        
+        string_aliases = ('object', 'str', 'o')
+        numeric_aliases = ('number', 'n', 'int', 'float')
+        temporal_aliases = ('time', 'datetime', 'date', 't')
+        boolean_aliases = ('bool', 'b', 'boolean')
+        print(numeric_aliases)
         if data_type in string_aliases:
             data_type = 'string'
         elif data_type in numeric_aliases:

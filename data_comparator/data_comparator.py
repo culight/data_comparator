@@ -9,16 +9,52 @@
 # pylint: disable=no-member
 import logging
 import sys
+import os
+import shelve
+
 import pandas as pd
-from models.dataset import Dataset, Column
-from models.comparison import Comparison
+
+from components.dataset import Dataset, Column
+from components.comparison import Comparison
 
 logging.basicConfig(format='%(asctime)s - %(message)s')
 
-DATASETS = {}
-COMPARISONS = {}
-COMP_DF = {}
-PROFILE = {}
+if not os.path.exists('db'):
+    os.makedirs('db')
+
+DATASET_SHL = shelve.open(filename='db/datasets', flag='n')
+COMPARISONS_SHL = shelve.open(filename='db/comparisons', flag='n')
+COMP_DF_SHL = shelve.open(filename='db/comparison_dfs', flag='n')
+PROFILE_SHL = shelve.open(filename='db/profiles', flag='n')
+
+DATA_CUPBOARD = {
+    'dataset': DATASET_SHL,
+    'comparison': COMPARISONS_SHL,
+    'comparison_df': COMP_DF_SHL,
+    'profile': PROFILE_SHL
+}
+
+
+def write_data(entry_type: str, entry_name: str, entry):
+    assert entry_name, '{} entry name not provided'.format(entry_type)
+    entry_dict = {entry_name: entry}
+    entry_shelf = DATA_CUPBOARD[entry_type]
+    try:
+        entry_shelf[entry_name] = entry_dict
+    except Exception as e:
+        print(e)
+
+def read_data(entry_type: str, entry_name=None):
+    entry_shelf = DATA_CUPBOARD[entry_type]
+    if entry_name:
+        entry_dict = entry_shelf.get(entry_name)
+        data = entry_dict[entry_name]
+    else:
+        data = list()
+        for e_name, e_dict in list(entry_shelf.items()):
+            data.append(e_dict[e_name])
+    
+    return data
 
 def load_dataset(
         data_source,
@@ -28,16 +64,17 @@ def load_dataset(
     """
     Load a single data source to add to the set of saved datasets
     Parameters:
-        data_source: Object in the form of a csv, parquet, or sas path... or
-        spark/pandas dataframe
-        data_source_name: Custom name for the resulting dataset. Default will
-        be provided if null
+        data_source: 
+            Object in the form of a csv, parquet, or sas path... 
+            or spark/pandas dataframe
+        data_source_name: 
+            Custom name for the resulting dataset. Default will 
+            be provided if null
     Output:
         Resulting dataset collection
     """
     assert data_source, 'Data source not provided'
 
-    global DATASETS
     src = data_source
 
     if data_source_name:
@@ -50,18 +87,19 @@ def load_dataset(
         "\nCreating dataset '{}' from source:\n '{}'".format(src_name, src)
     )
     
-    ret_dataset = _recycle_dataset(data_source, **load_params)
-    if ret_dataset != None:
-        DATASETS[src_name] = ret_dataset
-        print('This dataset has already been loaded...')
-        return ret_dataset
+    # ret_dataset = _recycle_dataset(data_source, **load_params)
+    # if ret_dataset != None:
+    #     DATASETS[src_name] = ret_dataset
+    #     print('This dataset has already been loaded...')
+    #     return ret_dataset
 
     dataset = Dataset(
         data_src=src, 
         name=src_name, 
         **load_params
     )
-    DATASETS[src_name] = dataset
+
+    _write_data('dataset', src_name, dataset)    
     
     print("\nDone")
 
@@ -86,8 +124,7 @@ def load_datasets(
         Resulting datasets
     """
     assert data_sources, 'Valid data source must be provided'
-    
-    global DATASETS
+
     src_names = []
     for i, src in enumerate(data_sources):
         src_name = None
@@ -112,15 +149,18 @@ def load_datasets(
                 data_src=src, 
                 name=src_name,
                 **load_params
-            )            
+            ) 
         else:
             dataset = Dataset(
                 data_src=src, 
                 name=src_name
             )
+            
 
         print("\nCreating dataset '{}'".format(src_name))
-        DATASETS[src_name] = dataset
+
+        _write_data('dataset', src_name, dataset)    
+
         print('\nDone')
     
     if not data_source_names:
@@ -136,6 +176,8 @@ def get_datasets():
     Output:
         All saved datasets
     """
+
+    _read_data
     return DATASETS
 
 
@@ -158,22 +200,30 @@ def _recycle_dataset(data_src, **load_params):
     """
     if len(load_params) > 0:
         return None
-    
-    datasets = DATASETS.copy()
-    for ds in datasets.values():
+
+    for ds in DATASETS.values():
         if str(ds.path) == data_src:
             return ds
     
     return None
 
-            
+
+def _close_shelves():
+    try:
+        DATASETS.close()
+        COMPARISONS.close()
+        COMP_DF.close()
+        PROFILE.close()
+    except KeyError:
+        pass
+        
+
 def clear_datasets():
     """
     Removes all saved datasets
     Parameters:
     Output:
     """
-    global DATASETS
     print("\nClearing all saved datasets...")
     DATASETS = {}
     print('\nDone')
@@ -186,7 +236,6 @@ def remove_dataset(src_name):
         src_name: Name of dataset to remove
     Output:
     """
-    global DATASETS
     try:
         print('Removing {}'.format(src_name))
         del DATASETS[src_name]
@@ -234,8 +283,8 @@ def _get_compare_df(comp: Comparison, col1_checks: dict, col2_checks: dict, add_
     comp.set_dataframe(_df)
     
     return _df
-        
-        
+
+
 def compare(
         ds_pair1: tuple,
         ds_pair2: tuple,
@@ -266,7 +315,6 @@ def compare(
         'First dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
     assert ds_pair2 and isinstance(ds_pair2, tuple) and len(ds_pair2) == 2, \
         'Second dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
-    global COMPARISONS
     # need to first process raw data sources into dataset objects
     data_src1 = ds_pair1[0]
     data_src2 = ds_pair2[0]
@@ -329,8 +377,6 @@ def compare_ds(
     assert isinstance(col1, Column), 'Column 1 is not a valid column'
     assert isinstance(col2, Column), 'Column 2 is not a valid column'
     
-    global COMPARISONS
-
     col1_checks = {}
     col2_checks = {}
     
@@ -361,7 +407,6 @@ def remove_comparison(comp_name):
     Parameters:
         comp_name: Name of comparison to remove
     """
-    global COMPARISONS
     try:
         print('Removing comparison {}'.format(comp_name))
         del COMPARISONS[comp_name]
@@ -373,7 +418,6 @@ def remove_comparison(comp_name):
 def clear_comparisons():
     """Removes all active copmarisons"""
     print("\nClearing all active comparisons...")
-    global COMPARISONS
     COMPARISONS = {}
     print('\nDone')
      
@@ -381,7 +425,6 @@ def clear_comparisons():
 def profile(dataset: Dataset, col_list: list, name: str=None):
     assert isinstance(dataset.__class__, Dataset.__class__), \
         "Data source must be of type 'Dataset'"
-    global PROFILE
     ds_profile = {}
     if '*' in col_list:
         for col in dataset.columns:
