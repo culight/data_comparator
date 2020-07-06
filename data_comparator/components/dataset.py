@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 import re
 import pandas as pd
-from models.check import (
+from components.check import (
     check_string_column,
     check_numeric_column,
     check_boolean_column,
@@ -166,7 +166,6 @@ class Dataset(object):
             raise TypeError('No columns found for this dataframe')
         for raw_col_name in self.dataframe.columns:
             print(raw_col_name)
-            print(self.dataframe[raw_col_name])
             raw_column = self.convert_dates(self.dataframe[raw_col_name])
             if re.search(r'(int)', str(raw_column.dtype)):
                 self.columns[raw_col_name] = NumericColumn(raw_column, self.name)
@@ -192,7 +191,7 @@ class Dataset(object):
     def get_cols_oftype(self, data_type):
         string_aliases = ['object', 'str', 'o']
         numeric_aliases = ['number', 'n']
-        temporal_aliases = ['time', 'datetime', 'date', 't'],
+        temporal_aliases = ['time', 'datetime', 'date', 't']
         boolean_aliases = ['bool', 'b']
         
         if data_type in string_aliases:
