@@ -8,53 +8,17 @@
 """
 # pylint: disable=no-member
 import logging
-import sys
 import os
-import shelve
 
 import pandas as pd
 
 from components.dataset import Dataset, Column
 from components.comparison import Comparison
+from components.data_cupboard import DataCupboard
 
 logging.basicConfig(format='%(asctime)s - %(message)s')
 
-if not os.path.exists('db'):
-    os.makedirs('db')
-
-DATASET_SHL = shelve.open(filename='db/datasets', flag='n')
-COMPARISONS_SHL = shelve.open(filename='db/comparisons', flag='n')
-COMP_DF_SHL = shelve.open(filename='db/comparison_dfs', flag='n')
-PROFILE_SHL = shelve.open(filename='db/profiles', flag='n')
-
-DATA_CUPBOARD = {
-    'dataset': DATASET_SHL,
-    'comparison': COMPARISONS_SHL,
-    'comparison_df': COMP_DF_SHL,
-    'profile': PROFILE_SHL
-}
-
-
-def write_data(entry_type: str, entry_name: str, entry):
-    assert entry_name, '{} entry name not provided'.format(entry_type)
-    entry_dict = {entry_name: entry}
-    entry_shelf = DATA_CUPBOARD[entry_type]
-    try:
-        entry_shelf[entry_name] = entry_dict
-    except Exception as e:
-        print(e)
-
-def read_data(entry_type: str, entry_name=None):
-    entry_shelf = DATA_CUPBOARD[entry_type]
-    if entry_name:
-        entry_dict = entry_shelf.get(entry_name)
-        data = entry_dict[entry_name]
-    else:
-        data = list()
-        for e_name, e_dict in list(entry_shelf.items()):
-            data.append(e_dict[e_name])
-    
-    return data
+DATA_CUPBOARD = DataCupboard()
 
 def load_dataset(
         data_source,
@@ -80,26 +44,20 @@ def load_dataset(
     if data_source_name:
         src_name = data_source_name
     else:
-        dataset_index = len(DATASETS)
+        datasets = DATA_CUPBOARD.read_data('dataset')
+        dataset_index = len(datasets)
         src_name = 'dataset_' + str(dataset_index)
 
     print(
         "\nCreating dataset '{}' from source:\n '{}'".format(src_name, src)
     )
-    
-    # ret_dataset = _recycle_dataset(data_source, **load_params)
-    # if ret_dataset != None:
-    #     DATASETS[src_name] = ret_dataset
-    #     print('This dataset has already been loaded...')
-    #     return ret_dataset
 
     dataset = Dataset(
         data_src=src, 
         name=src_name, 
         **load_params
     )
-
-    _write_data('dataset', src_name, dataset)    
+    DATA_CUPBOARD.write_data('dataset', src_name, dataset)    
     
     print("\nDone")
 
@@ -136,7 +94,8 @@ def load_datasets(
             except IndexError:
                 print('Number of names must match number of data sources')
         else:
-            dataset_index = len(DATASETS)
+            datasets = DATA_CUPBOARD.read_data('dataset')
+            dataset_index = len(datasets)
             src_name = 'dataset_' + str(dataset_index)
             src_names.append(src_name)
 
@@ -159,14 +118,15 @@ def load_datasets(
 
         print("\nCreating dataset '{}'".format(src_name))
 
-        _write_data('dataset', src_name, dataset)    
+        DATA_CUPBOARD.write_data('dataset', src_name, dataset)    
 
         print('\nDone')
     
     if not data_source_names:
         data_source_names = src_names
 
-    return [DATASETS[ds_name] for ds_name in data_source_names]
+    return [DATA_CUPBOARD.read_data('dataset', ds_name)
+      for ds_name in data_source_names]
 
 
 def get_datasets():
@@ -177,8 +137,7 @@ def get_datasets():
         All saved datasets
     """
 
-    _read_data
-    return DATASETS
+    return DATA_CUPBOARD.read_data('dataset')
 
 
 def get_dataset(ds_name):
@@ -189,34 +148,8 @@ def get_dataset(ds_name):
     Output:
         The specified dataset
     """
-    return DATASETS[ds_name]
+    return DATA_CUPBOARD.read_data('dataset', ds_name)
 
-
-def _recycle_dataset(data_src, **load_params):
-    """
-    Avoid using datasets that have already been loaded
-    Parameters: 
-    Output:  
-    """
-    if len(load_params) > 0:
-        return None
-
-    for ds in DATASETS.values():
-        if str(ds.path) == data_src:
-            return ds
-    
-    return None
-
-
-def _close_shelves():
-    try:
-        DATASETS.close()
-        COMPARISONS.close()
-        COMP_DF.close()
-        PROFILE.close()
-    except KeyError:
-        pass
-        
 
 def clear_datasets():
     """
@@ -225,7 +158,7 @@ def clear_datasets():
     Output:
     """
     print("\nClearing all saved datasets...")
-    DATASETS = {}
+    DATA_CUPBOARD.remove_data('dataset')
     print('\nDone')
 
 
@@ -238,7 +171,7 @@ def remove_dataset(src_name):
     """
     try:
         print('Removing {}'.format(src_name))
-        del DATASETS[src_name]
+        DATA_CUPBOARD.remove_data('dataset', src_name)
     except NameError:
         print('ERROR: Could not find dataset {}'.format(src_name))
     print('\nDone')
@@ -388,17 +321,17 @@ def compare_ds(
     _df = _get_compare_df(_comp, col1_checks, col2_checks, add_diff_col)
     
     if save_comp:
-        COMPARISONS[_comp.name] = _comp
+        DATA_CUPBOARD.write_data('comparison', _comp.name, _comp)
     
     return _df
 
 
 def get_comparisons():
-    return COMPARISONS
+    return DATA_CUPBOARD.read_data('comparison')
 
 
 def get_comparison(comp_name):
-    return COMPARISONS[comp_name]
+    return DATA_CUPBOARD.read_data('comparison', comp_name)
 
 
 def remove_comparison(comp_name):
@@ -409,7 +342,7 @@ def remove_comparison(comp_name):
     """
     try:
         print('Removing comparison {}'.format(comp_name))
-        del COMPARISONS[comp_name]
+        DATA_CUPBOARD.remove_data('comparison', comp_name)
     except NameError:
         print('Could not find comparison {}'.format(comp_name))
     print('\nDone')
@@ -418,7 +351,7 @@ def remove_comparison(comp_name):
 def clear_comparisons():
     """Removes all active copmarisons"""
     print("\nClearing all active comparisons...")
-    COMPARISONS = {}
+    DATA_CUPBOARD.remove_data('comparison')
     print('\nDone')
      
 
@@ -436,21 +369,21 @@ def profile(dataset: Dataset, col_list: list, name: str=None):
         col_full = dataset.name + '.' + col.name
         ds_profile[col_full] = col.get_summary()
 
-    if str:
-        PROFILE[name] = ds_profile
+    if name:
+        DATA_CUPBOARD.write_data('profile', name, ds_profile)
     else:
-        profile_name = 'profile_' + len(PROFILE)
-        PROFILE[profile_name] = ds_profile
+        profile_name = 'profile_' + len(DATA_CUPBOARD.read_data('profile'))
+        DATA_CUPBOARD.write_data('profile', profile_name, ds_profile)
         
     return ds_profile
     
           
 def clear_all():
      """Removes all active datasets and copmarisons"""
-     clear_datasets()
-     clear_comparisons()
+     DATA_CUPBOARD.remove_data()
 
 
 def view(comp_name):
-    print(COMPARISONS[comp_name].dataframe)
+    comp = DATA_CUPBOARD.read_data('comparison', comp_name)
+    print(comp.dataframe)
 
