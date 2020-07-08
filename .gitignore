@@ -1,8 +1,13 @@
 # ignore test data
 test_data/
+prior_comparison/
 
 # ignore vs code stuff
 .vscode/
 
 # ignore extraneous python files
 __pycache__/
+
+#ignore file types
+*.csv
+*.parquet
