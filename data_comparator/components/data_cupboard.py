@@ -28,17 +28,18 @@ class DataCupboard(object):
     def read_data(self, entry_type: str, entry_name=None):
         """Read persisted data dictionaries"""
         assert entry_type, 'entry type not provided'
-        data = None
+        output = {}
         if entry_name:
             try:
                 data = self.components[entry_type][entry_name]
+                output = {entry_name: data}
             except Exception as e:
                 print(e)
             
         else:
-            data = [entry for entry in self.components[entry_type].values()]
+            output = {name: data for (name, data) in self.components[entry_type].items()}
    
-        return {entry_name, data}
+        return output
     
     def remove_data(self, entry_type=None, entry_name=None):
         if not entry_type and not entry_name:
