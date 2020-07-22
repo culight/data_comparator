@@ -25,7 +25,6 @@ ACCEPTED_INPUT_FORMATS = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas', 'js
 
 
 class Dataset(object):
-    yaml_tag = u'!dataset'
 
     def __init__(self, data_src: object, name: str, **load_params):
         self.path = None
@@ -72,15 +71,6 @@ class Dataset(object):
 
     def __name__(self):
         return self.name
-
-    @classmethod
-    def to_yaml(cls, representer, node):
-        tag = getattr(cls, 'yaml_tag', '!' + cls.__name__)
-                
-
-    @classmethod
-    def from_yaml(cls, constructor, node):
-        return cls(*node.value.split('-'))
 
     def _get_input_format(self) -> str:
         suffix = self.path.suffix.replace('.', '')
@@ -206,7 +196,7 @@ class Dataset(object):
         
     def get_cols_oftype(self, data_type):
         string_aliases = ['object', 'str', 'o']
-        numeric_aliases = ['number', 'n']
+        numeric_aliases = ['number', 'n', 'int']
         temporal_aliases = ['time', 'datetime', 'date', 't']
         boolean_aliases = ['bool', 'b']
         
