@@ -9,7 +9,9 @@ import os
 from datetime import datetime
 from pathlib import Path
 import re
+
 import pandas as pd
+
 from components.check import (
     check_string_column,
     check_numeric_column,
@@ -23,6 +25,7 @@ ACCEPTED_INPUT_FORMATS = ['sas7bdat', 'csv', 'parquet', 'pyspark', 'pandas', 'js
 
 
 class Dataset(object):
+
     def __init__(self, data_src: object, name: str, **load_params):
         self.path = None
         self.input_format = ''
@@ -65,6 +68,9 @@ class Dataset(object):
     
     def __len__(self):
         len(self.columns)
+
+    def __name__(self):
+        return self.name
 
     def _get_input_format(self) -> str:
         suffix = self.path.suffix.replace('.', '')
@@ -126,7 +132,7 @@ class Dataset(object):
                 raise ValueError('Please provide a valid delimiter for this text file')
             data = pd.read_table(str(self.path), **load_params)
         elif self.input_format == 'parquet':
-            data = pd.read_parquet(str(self.path), **load_params)
+            data = pd.read_parquet(str(self.path), engine='pyarrow', **load_params)
         elif self.input_format == 'json':
             data = pd.read_json(str(self.path), **load_params)
         else:
@@ -190,7 +196,7 @@ class Dataset(object):
         
     def get_cols_oftype(self, data_type):
         string_aliases = ['object', 'str', 'o']
-        numeric_aliases = ['number', 'n']
+        numeric_aliases = ['number', 'n', 'int']
         temporal_aliases = ['time', 'datetime', 'date', 't']
         boolean_aliases = ['bool', 'b']
         
@@ -226,15 +232,18 @@ class Column(object):
 
 class StringColumn(Column):
     def __init__(self, raw_column, ds_name):
-        Column.__init__(self, raw_column, ds_name)
-        self.data_type = self.__class__.__name__
-        self.text_length_mean = raw_column.str.len().mean()
-        self.text_length_std = raw_column.str.len().std()
-        self.text_length_med = raw_column.str.len().median()
-        descr = raw_column.describe()
-        self.unique = descr['unique']
-        self.duplicates = self.count - self.unique
-        #self.top = descr['top']
+        try:
+            Column.__init__(self, raw_column, ds_name)
+            self.data_type = self.__class__.__name__
+            self.text_length_mean = raw_column.str.len().mean()
+            self.text_length_std = raw_column.str.len().std()
+            self.text_length_med = raw_column.str.len().median()
+            descr = raw_column.describe()
+            self.unique = descr['unique']
+            self.duplicates = self.count - self.unique
+        except Exception as e:
+            print(e)
+            #TODO: add to list of uncon. types
 
     def get_summary(self) -> dict:
         return {

@@ -20,7 +20,7 @@ _BAR_FIELDS = ['count', 'missing', 'unique']
 _BOXPLOT_FIELDS = ['min', 'max', 'std', 'mean', 'zeros']
 
 class Comparison:
-    def __init__(self, col1, col2):
+    def __init__(self, col1, col2, compare_by_col):
         
         if not isinstance(col1.__class__, Column.__class__):
             print("ERROR: Column 1 must be a 'Column' object")
@@ -40,14 +40,22 @@ class Comparison:
         self.col1 = col1
         self.col2 = col2
         self.data_type = col1.data_type
-        if col1.name == col2.name:
-            self.name = col1.ds_name + '.' + col1.name + '-' + col2.ds_name + '.' + col2.name
+        self.compare_by_col = compare_by_col
+
+        if compare_by_col:
+            self.name = col1.name
         else:
-            self.name = col1.name + '-' + col2.name
+            if col1.name == col2.name:
+                self.name = col1.ds_name + '.' + col1.name + '-' + col2.ds_name + '.' + col2.name
+            else:
+                self.name = col1.name + '-' + col2.name
         self.dataframe = None
     
     def set_dataframe(self, dataframe: pd.DataFrame):
         self.dataframe = dataframe
+
+    def view(self):
+        return self.dataframe
     
     def create_diff_column(self, checks_added: bool=False):
         assert self.col1 and self.col2, 'Two columns must be provided to create diff column'

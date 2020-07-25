@@ -8,7 +8,7 @@
 """
 # pylint: disable=no-member
 import logging
-import os
+from typing import Union
 
 import pandas as pd
 
@@ -151,6 +151,14 @@ def get_dataset(ds_name):
     return DATA_CUPBOARD.read_data('dataset', ds_name)
 
 
+def pop_dataset(comp_name):
+    return DATA_CUPBOARD.pop_data('dataset', comp_name)
+
+
+def pop_datasets():
+    return DATA_CUPBOARD.pop_data('dataset')
+
+
 def clear_datasets():
     """
     Removes all saved datasets
@@ -219,9 +227,11 @@ def _get_compare_df(comp: Comparison, col1_checks: dict, col2_checks: dict, add_
 
 
 def compare(
-        ds_pair1: tuple,
-        ds_pair2: tuple,
-        ds_names: list=None,
+        data_source1,
+        data_source2,
+        col_pairs: Union[list, tuple]=None,
+        ds_name1: str=None,
+        ds_name2: str=None,
         perform_check: bool=False,
         save_comp: bool=True,
         add_diff_col: bool=False
@@ -244,42 +254,63 @@ def compare(
     Output:
         Dataframe of compared variables
     """
-    assert ds_pair1 and isinstance(ds_pair1, tuple) and len(ds_pair1) == 2, \
-        'First dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
-    assert ds_pair2 and isinstance(ds_pair2, tuple) and len(ds_pair2) == 2, \
-        'Second dataset and column pair must be provided as a tuple: e.g. (dataset, col)'
+    assert data_source1 and data_source2, \
+        'Two datasets must be provided for comparison'
+
     # need to first process raw data sources into dataset objects
-    data_src1 = ds_pair1[0]
-    data_src2 = ds_pair2[0]
     ds1, ds2 = load_datasets(
-        data_src1, 
-        data_src2,
-        data_source_names=ds_names,
+        data_source1,
+        data_source2,
+        data_source_names=[ds_name1, ds_name2] if (ds_name1 or ds_name2) else None,
         load_params_list=[{}, {}]
     )
+
+    compare_by_col = False
+    cols_to_compare = list()
+    if not col_pairs:
+        # name the comparison object after the single column
+        compare_by_col = True
+
+        # no column pairs provided for comparison...
+        # compare columns with like names
+        ds1_cols = list(ds1.columns.keys())
+        ds2_cols = list(ds2.columns.keys())
+ 
+        common_cols = list(
+            set(ds1_cols).intersection(ds2_cols)
+        )
+        cols_to_compare = [(col, col) for col in common_cols]
+    else:
+        if type(col_pairs) == list and len(col_pairs) > 0:
+            cols_to_compare = col_pairs
+        elif type(col_pairs) == tuple and len(col_pairs) == 2:
+            cols_to_compare = col_pairs
+        else:
+            print('Invalid column pairs entry {}'.format(col_pairs))
         
-    col_name1 = ds_pair1[1]
-    col_name2 = ds_pair2[1]
-    
-    assert col_name1 in ds1.columns, \
-        '{} is not a valid column in dataset {}'.format(col_name1, ds1)
-    assert col_name2 in ds2.columns, \
-        '{} is not a valid column in dataset {}'.format(col_name2, ds2)
+    for pair in cols_to_compare:
+        col_name1 = pair[0]
+        col_name2 = pair[1]
+
+        assert col_name1 in ds1.columns, \
+            '{} is not a valid column in dataset {}'.format(col_name1, ds1)
+        assert col_name2 in ds2.columns, \
+            '{} is not a valid column in dataset {}'.format(col_name2, ds2)
+            
+        col1 = ds1.columns[col_name1]
+        col2 = ds2.columns[col_name2]
+        col1_checks = {}
+        col2_checks = {}
         
-    col1 = ds1.columns[col_name1]
-    col2 = ds2.columns[col_name2]
-    col1_checks = {}
-    col2_checks = {}
-    
-    if perform_check:
-        col1_checks = col1.perform_check()
-        col2_checks = col2.perform_check()
-    
-    _comp = Comparison(col1, col2)
-    _df = _get_compare_df(_comp, col1_checks, col2_checks, add_diff_col)
-    
-    if save_comp:
-        COMPARISONS[_comp.name] = _comp
+        if perform_check:
+            col1_checks = col1.perform_check()
+            col2_checks = col2.perform_check()
+        
+        _comp = Comparison(col1, col2, compare_by_col)
+        _df = _get_compare_df(_comp, col1_checks, col2_checks, add_diff_col)
+        
+        if save_comp:
+            DATA_CUPBOARD.write_data('comparison', _comp.name, _comp)
     
     return _df
 
@@ -334,6 +365,14 @@ def get_comparison(comp_name):
     return DATA_CUPBOARD.read_data('comparison', comp_name)
 
 
+def pop_comparison(comp_name):
+    return DATA_CUPBOARD.pop_data('comparison', comp_name)
+
+
+def pop_comparisons():
+    return DATA_CUPBOARD.pop_data('comparison')
+
+
 def remove_comparison(comp_name):
     """
     Removes the specified comparison from active datasets
@@ -377,6 +416,10 @@ def profile(dataset: Dataset, col_list: list, name: str=None):
         
     return ds_profile
     
+
+def pop_all():
+    return DATA_CUPBOARD.pop_data()
+          
           
 def clear_all():
      """Removes all active datasets and copmarisons"""
