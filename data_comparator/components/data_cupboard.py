@@ -32,7 +32,7 @@ class DataCupboard(object):
         if entry_name:
             try:
                 data = self.components[entry_type][entry_name]
-                output = {entry_name: data}
+                output = data
             except Exception as e:
                 print(e)
             
@@ -54,3 +54,22 @@ class DataCupboard(object):
             self.components[entry_type][entry_name].clear()
         else:
             print("Please provide entry type")
+
+    def pop_data(self, entry_type=None, entry_name=None):
+        output = None
+        if not entry_type and not entry_name:
+            # clear everything
+            for comp_type in self.components.keys():
+                output[comp_type] = self.components[comp_type].copy()
+                self.components[comp_type].clear()
+        elif entry_type and not entry_name:
+            # clear entries of a specific component
+            output = self.components[entry_type].copy()
+            self.components[entry_type].clear()
+        elif entry_type and entry_name:
+            # remove a specific entry
+            output = self.components[entry_type][entry_name].copy()
+            self.components[entry_type][entry_name].clear()
+        else:
+            print("Please provide entry type")
+        return output

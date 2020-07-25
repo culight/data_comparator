@@ -125,7 +125,7 @@ def load_datasets(
     if not data_source_names:
         data_source_names = src_names
 
-    return [DATA_CUPBOARD.read_data('dataset', ds_name)[ds_name]
+    return [DATA_CUPBOARD.read_data('dataset', ds_name)
       for ds_name in data_source_names]
 
 
@@ -149,6 +149,14 @@ def get_dataset(ds_name):
         The specified dataset
     """
     return DATA_CUPBOARD.read_data('dataset', ds_name)
+
+
+def pop_dataset(comp_name):
+    return DATA_CUPBOARD.pop_data('dataset', comp_name)
+
+
+def pop_datasets():
+    return DATA_CUPBOARD.pop_data('dataset')
 
 
 def clear_datasets():
@@ -253,12 +261,16 @@ def compare(
     ds1, ds2 = load_datasets(
         data_source1,
         data_source2,
-        data_source_names=[ds_name1, ds_name2] if (ds_name1 and ds_name2) else None,
+        data_source_names=[ds_name1, ds_name2] if (ds_name1 or ds_name2) else None,
         load_params_list=[{}, {}]
     )
 
+    compare_by_col = False
     cols_to_compare = list()
     if not col_pairs:
+        # name the comparison object after the single column
+        compare_by_col = True
+
         # no column pairs provided for comparison...
         # compare columns with like names
         ds1_cols = list(ds1.columns.keys())
@@ -294,7 +306,7 @@ def compare(
             col1_checks = col1.perform_check()
             col2_checks = col2.perform_check()
         
-        _comp = Comparison(col1, col2)
+        _comp = Comparison(col1, col2, compare_by_col)
         _df = _get_compare_df(_comp, col1_checks, col2_checks, add_diff_col)
         
         if save_comp:
@@ -353,6 +365,14 @@ def get_comparison(comp_name):
     return DATA_CUPBOARD.read_data('comparison', comp_name)
 
 
+def pop_comparison(comp_name):
+    return DATA_CUPBOARD.pop_data('comparison', comp_name)
+
+
+def pop_comparisons():
+    return DATA_CUPBOARD.pop_data('comparison')
+
+
 def remove_comparison(comp_name):
     """
     Removes the specified comparison from active datasets
@@ -396,6 +416,10 @@ def profile(dataset: Dataset, col_list: list, name: str=None):
         
     return ds_profile
     
+
+def pop_all():
+    return DATA_CUPBOARD.pop_data()
+          
           
 def clear_all():
      """Removes all active datasets and copmarisons"""
