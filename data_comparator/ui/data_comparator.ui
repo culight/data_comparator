@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>503</width>
+    <width>530</width>
     <height>341</height>
    </rect>
   </property>
@@ -21,6 +21,35 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
+    <item row="0" column="1">
+     <layout class="QGridLayout" name="loggingBoxLayout">
+      <property name="leftMargin">
+       <number>10</number>
+      </property>
+      <property name="topMargin">
+       <number>10</number>
+      </property>
+      <property name="rightMargin">
+       <number>10</number>
+      </property>
+      <property name="bottomMargin">
+       <number>10</number>
+      </property>
+      <item row="0" column="0">
+       <widget class="QPlainTextEdit" name="loggingBox">
+        <property name="maximumSize">
+         <size>
+          <width>200</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
     <item row="0" column="0">
      <widget class="QToolBox" name="mainLayoutToolbox">
       <property name="sizePolicy">
@@ -34,7 +63,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>313</width>
+         <width>327</width>
          <height>285</height>
         </rect>
        </property>
@@ -296,15 +325,15 @@
                <string>Dataset 1</string>
               </attribute>
               <layout class="QGridLayout" name="gridLayout_6">
-               <item row="1" column="0">
-                <widget class="QTableWidget" name="dataframe1Table"/>
-               </item>
                <item row="0" column="0">
                 <widget class="QPushButton" name="datasetDetails1Button">
                  <property name="text">
                   <string>Dataset Details</string>
                  </property>
                 </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QTableView" name="dataframe1Table"/>
                </item>
               </layout>
              </widget>
@@ -313,15 +342,15 @@
                <string>Dataset 2</string>
               </attribute>
               <layout class="QGridLayout" name="gridLayout_5">
-               <item row="1" column="0">
-                <widget class="QTableWidget" name="dataframe2Table"/>
-               </item>
                <item row="0" column="0">
                 <widget class="QPushButton" name="datasetDetails2Button">
                  <property name="text">
                   <string>Dataset Details</string>
                  </property>
                 </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QTableView" name="dataframe2Table"/>
                </item>
               </layout>
              </widget>
@@ -549,35 +578,6 @@
        </layout>
       </widget>
      </widget>
-    </item>
-    <item row="0" column="1">
-     <layout class="QGridLayout" name="loggingBoxLayout">
-      <property name="leftMargin">
-       <number>10</number>
-      </property>
-      <property name="topMargin">
-       <number>10</number>
-      </property>
-      <property name="rightMargin">
-       <number>10</number>
-      </property>
-      <property name="bottomMargin">
-       <number>10</number>
-      </property>
-      <item row="0" column="0">
-       <widget class="QPlainTextEdit" name="loggingBox">
-        <property name="maximumSize">
-         <size>
-          <width>200</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-     </layout>
     </item>
    </layout>
   </widget>
