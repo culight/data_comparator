@@ -7,8 +7,9 @@
 ### DEVELOPER NOTES:
 """
 # pylint: disable=no-member
+import sys
 import logging
-from typing import Union
+from typing import Type, Union
 
 import pandas as pd
 
@@ -16,9 +17,14 @@ from components.dataset import Dataset, Column
 from components.comparison import Comparison
 from components.data_cupboard import DataCupboard
 
-logging.basicConfig(format="%(asctime)s - %(message)s")
-
+logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
+LOGGER = logging.getLogger(__name__)
+LOGGER.debug("test")
 DATA_CUPBOARD = DataCupboard()
+
+# =============================================================================
+# LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
+# =============================================================================
 
 
 def load_dataset(data_source, data_source_name: str = "", **load_params):
@@ -45,7 +51,7 @@ def load_dataset(data_source, data_source_name: str = "", **load_params):
         dataset_index = len(datasets)
         src_name = "dataset_" + str(dataset_index)
 
-    print("\nCreating dataset '{}' from source:\n '{}'".format(src_name, src))
+    LOGGER.info("\nCreating dataset '{}' from source:\n '{}'".format(src_name, src))
 
     dataset = Dataset(data_src=src, name=src_name, **load_params)
     DATA_CUPBOARD.write_data("dataset", src_name, dataset)
