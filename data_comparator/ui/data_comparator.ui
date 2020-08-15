@@ -96,7 +96,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QListWidget" name="dataset2Columns">
+             <widget class="QListView" name="dataset2Columns">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                 <horstretch>0</horstretch>
@@ -222,7 +222,7 @@
           </item>
           <item row="0" column="0">
            <layout class="QVBoxLayout" name="dataset1Layout">
-            <item>
+            <item alignment="Qt::AlignHCenter">
              <widget class="QLabel" name="dataset1Label">
               <property name="maximumSize">
                <size>
@@ -249,7 +249,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QListWidget" name="dataset1Columns">
+             <widget class="QListView" name="dataset1Columns">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                 <horstretch>0</horstretch>
