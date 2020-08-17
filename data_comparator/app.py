@@ -13,9 +13,17 @@ from PyQt5.QtCore import *
 from PyQt5.QtPrintSupport import *
 from PyQt5 import uic
 
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.backends.backend_qt5agg import (
+    FigureCanvasQTAgg,
+    NavigationToolbar2QT as NavigationToolbar,
+)
+from matplotlib.figure import Figure
+
 MAIN_UI = "ui/data_comparator.ui"
 DETAIL_DLG = "ui/data_detail_dialog.ui"
 ACCEPTED_INPUT_FORMATS = ["sas7bdat", "csv", "parquet", "json"]
+NON_PLOT_ROWS = ["ds_name", "name", "data_type"]
 
 DATASET1 = None
 DATASET2 = None
@@ -74,7 +82,7 @@ class SelectFileButton(QPushButton):
         self.onDatasetLoaded()
 
     def onDatasetLoaded(self):
-        self.parent.render(self.dataset, self.ds_num)
+        self.parent.render_data(self.dataset, self.ds_num)
 
 
 class ColumnSelectButton(QPushButton):
@@ -100,6 +108,10 @@ class DataDetailDialog(QDialog):
     def __init__(self, dataset):
         super(DataDetailDialog, self).__init__()
         uic.loadUi(DETAIL_DLG, self)
+
+        self.detailDialogTable.horizontalHeader().setSectionResizeMode(
+            QHeaderView.Interactive
+        )
 
         entries = dataset.get_summary()
         entries.pop("columns")
@@ -156,8 +168,11 @@ class ValidationButton(QPushButton):
 
 
 class CompareButton(QPushButton):
-    def __init__(self, button):
+    def __init__(self, button, parent=None):
         super(QPushButton, self).__init__()
+        self.button = button
+        self.parent = parent
+        self.button.clicked.connect(self.compare)
 
 
 class ResetButton(QPushButton):
@@ -168,7 +183,7 @@ class ResetButton(QPushButton):
 class DataframeTableModel(QAbstractTableModel):
     def __init__(self, df):
         QAbstractTableModel.__init__(self)
-        self.df = df
+        self.df = df.head(300)
 
     def rowCount(self, parent=None):
         return self.df.shape[0]
@@ -212,6 +227,39 @@ class ComparisonTableModel(QAbstractTableModel):
         return None
 
 
+class ComparisonOutputTableModel(QAbstractTableModel):
+    def __init__(self, df):
+        QAbstractTableModel.__init__(self)
+        self.df = df
+        self.vertical_header = list(df.index)
+
+    def rowCount(self, parent=None):
+        return self.df.shape[0]
+
+    def columnCount(self, parent=None):
+        return self.df.shape[1]
+
+    def data(self, index, role=Qt.DisplayRole):
+        if index.isValid():
+            data = str(self.df.iloc[index.row(), index.column()])
+            if role == Qt.DisplayRole:
+                return data
+            if role == Qt.BackgroundRole and (index.column() == 2):
+                if data in ["same", "NaT"]:
+                    return QBrush(Qt.green)
+                else:
+                    return QBrush(Qt.red)
+
+        return None
+
+    def headerData(self, col, orientation, role):
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return self.df.columns[col]
+        if orientation == Qt.Vertical and role == Qt.DisplayRole:
+            return self.vertical_header[col]
+        return None
+
+
 class DatasetColumnsListModel(QAbstractListModel):
     def __init__(self, dataset=None, parent=None):
         super(DatasetColumnsListModel, self).__init__(parent)
@@ -227,11 +275,18 @@ class DatasetColumnsListModel(QAbstractListModel):
     def rowCount(self, parent=QModelIndex()):
         return len(self.cols)
 
-    def addColumns(self, dataset):
-        for col in list(dataset.columns.keys()):
-            self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount())
-            self.cols.append(col)
-            self.endInsertRows()
+
+class ComparisonsComboBox(QComboBox):
+    def __init__(self, comparisons, parent=None):
+        super(ComparisonsComboBox, self).__init__(parent)
+        self.comparisons = comparisons
+
+
+class Plot(FigureCanvasQTAgg):
+    def __init__(self, parent=None):
+        fig = Figure()
+        self.axes = fig.add_subplot(111)
+        super(Plot, self).__init__(fig)
 
 
 class LogStream(logging.StreamHandler):
@@ -255,7 +310,15 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.comparisons = []
-        self.isPopulated = {"colList1": False, "colList2": False, "colTable": False}
+        self.isPopulated = {"colList1": False, "colList2": False, "compTable": False}
+        # self.plot_frames = [
+        #     self.plotFrame1,
+        #     self.plotFrame2,
+        #     self.plotFrame3,
+        #     self.plotFrame4,
+        #     self.plotFrame5,
+        #     self.plotFrame6,
+        # ]
 
         uic.loadUi(MAIN_UI, self)
         self.setup_logger()
@@ -280,10 +343,34 @@ class MainWindow(QMainWindow):
             self.removeAllButton, "remove_all", self
         )
 
+        # set up dataframe tables
+        self.dataframe1Table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.Interactive
+        )
+        self.dataframe1Table.horizontalHeader().setSectionsMovable(True)
+        self.dataframe2Table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.Interactive
+        )
+        self.dataframe2Table.horizontalHeader().setSectionsMovable(True)
+
         # set up comparison table
         self.compTableModel = ComparisonTableModel(self.comparisons)
         self.comparisonColumnsTable.setModel(self.compTableModel)
-        self.comparisonColumnsTable.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.comparisonColumnsTable.horizontalHeader().setSectionResizeMode(
+            QHeaderView.Stretch
+        )
+
+        # set up tabs column
+        self.comparisonsTabLayout.setCurrentIndex(0)
+
+        # set up compare and reset buttons
+        self.compareButton.clicked.connect(self.compare)
+        self.resetButton.clicked.connect(self.reset)
+
+        # set up comparison output table
+        self.comparisonTable.horizontalHeader().setSectionResizeMode(
+            QHeaderView.Stretch
+        )
 
         self.show()
 
@@ -300,6 +387,68 @@ class MainWindow(QMainWindow):
             if comp_name in comp[0]:
                 return False
         return True
+
+    def _update_setup(self):
+        # update combo box
+        self.comparisonsComboBox.clear()
+        comp_names = [col[0] for col in self.comparisons]
+        self.comparisonsComboBox.addItems(comp_names)
+
+        # update compare and reset buttons
+        if self.isPopulated["compTable"]:
+            self.compareButton.setEnabled(True)
+        else:
+            self.compareButton.setEnabled(False)
+
+    def create_plots(self, comp_df):
+        rows = list(comp_df.index)
+        for index, row in enumerate(rows):
+            if row in NON_PLOT_ROWS:
+                continue
+            plot_model = Plot(self)
+            comp_df.loc[[row]].plot(ax=plot_model)
+            toolbar = NavigationToolbar(plot_model, self)
+
+            self.plot_frames[index].addWidget(toolbar)
+            self.plot_frames[index].addWidget(plot_model)
+
+    def compare(self):
+        comp_name = self.comparisonsComboBox.currentText()
+        col1, col2 = comp_name.split("-")
+        compare_by_col = col1 == col2
+
+        add_diff_col = self.addDiffCheckbox.isChecked()
+        perform_validations = self.performValidationsCheckbox.isChecked()
+        create_plots_checked = self.createVizCheckbox.isChecked()
+
+        comp_df = None
+        if DATASET1 != None and DATASET2 != None:
+            comp_df = dc.compare_ds(
+                col1=DATASET1[col1],
+                col2=DATASET2[col2],
+                perform_check=perform_validations,
+                add_diff_col=add_diff_col,
+                save_comp=False,
+                compare_by_col=compare_by_col,
+            )
+
+            self.comp_table_model = ComparisonOutputTableModel(comp_df)
+            self.comparisonTable.setModel(self.comp_table_model)
+            self.resetButton.setEnabled(True)
+        else:
+            LOGGER.error("Datasets not available to make comparisons")
+
+        # if create_plots_checked and (comp_df != None):
+        #     self.create_plots(comp_df)
+
+        self.comparisonsTabLayout.setCurrentIndex(1)
+
+    def reset(self):
+        # self.comparisonTable.setSpans()
+
+        # self.resetButton.setEnabled(False)
+        # self.comparisonsTabLayout.setCurrentIndex(1)
+        pass
 
     def add_comparison(self):
         colList1_indexes = self.dataset1Columns.selectedIndexes()
@@ -335,9 +484,13 @@ class MainWindow(QMainWindow):
         self.comparisons.append([comp_name, col1, col2])
         self.comparisonColumnsTable.model().layoutChanged.emit()
 
-        self.isPopulated["colTable"] = True
-        self.remove_one_button.button.setEnabled(True)
-        self.remove_all_button.button.setEnabled(True)
+        self.isPopulated["compTable"] = len(self.comparisons) > 0
+
+        if self.isPopulated["compTable"]:
+            self.remove_one_button.button.setEnabled(True)
+            self.remove_all_button.button.setEnabled(True)
+
+        self._update_setup()
 
     def add_comparisons(self):
         colList1_cols = self.dataset1Columns_model.cols
@@ -359,12 +512,14 @@ class MainWindow(QMainWindow):
             self.comparisons.append([comp_name, col1, col2])
         self.comparisonColumnsTable.model().layoutChanged.emit()
 
-        self.isPopulated["colTable"] = len(self.comparisons) > 0
+        self.isPopulated["compTable"] = len(self.comparisons) > 0
 
-        if self.isPopulated["colTable"]:
+        if self.isPopulated["compTable"]:
             self.remove_one_button.button.setEnabled(True)
             self.remove_all_button.button.setEnabled(True)
             self.add_all_button.button.setEnabled(False)
+
+        self._update_setup()
 
     def remove_comparison(self):
         if not self.comparisonColumnsTable.selectionModel().hasSelection():
@@ -372,31 +527,36 @@ class MainWindow(QMainWindow):
             return
 
         comp_indices = self.comparisonColumnsTable.selectionModel().selectedRows()
+
         for index in sorted(comp_indices):
             del self.comparisons[index.row()]
         self.comparisonColumnsTable.model().layoutChanged.emit()
 
-        self.isPopulated["colTable"] = len(self.comparisons) > 0
+        self.isPopulated["compTable"] = len(self.comparisons) > 0
 
-        if not self.isPopulated["colTable"]:
+        if not self.isPopulated["compTable"]:
             self.remove_one_button.button.setEnabled(False)
             self.remove_all_button.button.setEnabled(False)
             self.add_all_button.button.setEnabled(True)
 
+        self._update_setup()
+
     def clear_comparisons(self):
-        if not self.isPopulated["colTable"]:
+        if not self.isPopulated["compTable"]:
             LOGGER.error("No rows to delete")
             return
 
         self.comparisons.clear()
         self.comparisonColumnsTable.model().layoutChanged.emit()
 
-        self.isPopulated["colTable"] = len(self.comparisons) > 0
+        self.isPopulated["compTable"] = len(self.comparisons) > 0
 
-        if not self.isPopulated["colTable"]:
+        if not self.isPopulated["compTable"]:
             self.remove_one_button.button.setEnabled(False)
             self.remove_all_button.button.setEnabled(False)
             self.add_all_button.button.setEnabled(True)
+
+        self._update_setup()
 
     def setup_logger(self):
         font = QFont("Arial", 5)
@@ -406,7 +566,7 @@ class MainWindow(QMainWindow):
         logHandler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
         logging.getLogger().addHandler(logHandler)
 
-    def render(self, dataset, ds_num):
+    def render_data(self, dataset, ds_num):
         global DATASET1
         global DATASET2
 
@@ -442,6 +602,8 @@ class MainWindow(QMainWindow):
             self.ds_details_button2 = DatasetDetailsButton(
                 self.datasetDetails2Button, dataset
             )
+
+        self.clear_comparisons()
 
         if self.isPopulated["colList1"] and self.isPopulated["colList2"]:
             self.add_one_button.button.setEnabled(True)

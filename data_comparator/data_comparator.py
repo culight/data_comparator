@@ -305,6 +305,7 @@ def compare_ds(
     perform_check: bool = False,
     save_comp: bool = True,
     add_diff_col: bool = False,
+    compare_by_col: bool = False,
 ):
     """
     A function for comparing two dataset objects
@@ -332,7 +333,7 @@ def compare_ds(
         col1_checks = col1.perform_check()
         col2_checks = col2.perform_check()
 
-    _comp = Comparison(col1, col2)
+    _comp = Comparison(col1, col2, compare_by_col)
     _df = _get_compare_df(_comp, col1_checks, col2_checks, add_diff_col)
 
     if save_comp:

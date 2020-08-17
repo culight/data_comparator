@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>530</width>
+    <width>594</width>
     <height>341</height>
    </rect>
   </property>
@@ -21,35 +21,6 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
-    <item row="0" column="1">
-     <layout class="QGridLayout" name="loggingBoxLayout">
-      <property name="leftMargin">
-       <number>10</number>
-      </property>
-      <property name="topMargin">
-       <number>10</number>
-      </property>
-      <property name="rightMargin">
-       <number>10</number>
-      </property>
-      <property name="bottomMargin">
-       <number>10</number>
-      </property>
-      <item row="0" column="0">
-       <widget class="QPlainTextEdit" name="loggingBox">
-        <property name="maximumSize">
-         <size>
-          <width>200</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
     <item row="0" column="0">
      <widget class="QToolBox" name="mainLayoutToolbox">
       <property name="sizePolicy">
@@ -63,7 +34,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>327</width>
+         <width>359</width>
          <height>285</height>
         </rect>
        </property>
@@ -216,6 +187,30 @@
                 <height>16777215</height>
                </size>
               </property>
+              <property name="alternatingRowColors">
+               <bool>true</bool>
+              </property>
+              <property name="selectionMode">
+               <enum>QAbstractItemView::SingleSelection</enum>
+              </property>
+              <property name="selectionBehavior">
+               <enum>QAbstractItemView::SelectRows</enum>
+              </property>
+              <attribute name="horizontalHeaderCascadingSectionResizes">
+               <bool>true</bool>
+              </attribute>
+              <attribute name="horizontalHeaderMinimumSectionSize">
+               <number>30</number>
+              </attribute>
+              <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
+               <bool>true</bool>
+              </attribute>
+              <attribute name="horizontalHeaderStretchLastSection">
+               <bool>false</bool>
+              </attribute>
+              <attribute name="verticalHeaderStretchLastSection">
+               <bool>false</bool>
+              </attribute>
              </widget>
             </item>
            </layout>
@@ -293,7 +288,7 @@
       <widget class="QWidget" name="dataDetailPage">
        <property name="geometry">
         <rect>
-         <x>0</x>
+         <x>-24</x>
          <y>0</y>
          <width>383</width>
          <height>272</height>
@@ -333,7 +328,20 @@
                 </widget>
                </item>
                <item row="1" column="0">
-                <widget class="QTableView" name="dataframe1Table"/>
+                <widget class="QTableView" name="dataframe1Table">
+                 <property name="alternatingRowColors">
+                  <bool>true</bool>
+                 </property>
+                 <property name="sortingEnabled">
+                  <bool>true</bool>
+                 </property>
+                 <attribute name="horizontalHeaderMinimumSectionSize">
+                  <number>60</number>
+                 </attribute>
+                 <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
+                  <bool>false</bool>
+                 </attribute>
+                </widget>
                </item>
               </layout>
              </widget>
@@ -368,7 +376,7 @@
               <enum>QTabWidget::Triangular</enum>
              </property>
              <property name="currentIndex">
-              <number>0</number>
+              <number>2</number>
              </property>
              <widget class="QWidget" name="setupTab">
               <property name="sizePolicy">
@@ -393,6 +401,9 @@
                   <layout class="QHBoxLayout" name="finalButtonsLayout">
                    <item>
                     <widget class="QPushButton" name="compareButton">
+                     <property name="enabled">
+                      <bool>false</bool>
+                     </property>
                      <property name="text">
                       <string>Compare</string>
                      </property>
@@ -422,10 +433,7 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QComboBox" name="datasetsComboBox"/>
-                     </item>
-                     <item>
-                      <widget class="QComboBox" name="comparisonsCheckbox"/>
+                      <widget class="QComboBox" name="comparisonsComboBox"/>
                      </item>
                      <item>
                       <widget class="QCheckBox" name="addDiffCheckbox">
@@ -531,21 +539,28 @@
                     </widget>
                    </item>
                    <item>
-                    <widget class="QTableView" name="comparisonTable"/>
-                   </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <layout class="QVBoxLayout" name="validationLayout">
-                   <item alignment="Qt::AlignHCenter">
-                    <widget class="QLabel" name="validationsLabel">
-                     <property name="text">
-                      <string>Validations</string>
+                    <widget class="QTableView" name="comparisonTable">
+                     <property name="alternatingRowColors">
+                      <bool>true</bool>
                      </property>
+                     <attribute name="horizontalHeaderCascadingSectionResizes">
+                      <bool>true</bool>
+                     </attribute>
                     </widget>
                    </item>
                    <item>
-                    <widget class="QTableView" name="validationTable"/>
+                    <layout class="QVBoxLayout" name="validationLayout">
+                     <item alignment="Qt::AlignHCenter">
+                      <widget class="QLabel" name="validationsLabel">
+                       <property name="text">
+                        <string>Validations</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QTableView" name="validationTable"/>
+                     </item>
+                    </layout>
                    </item>
                   </layout>
                  </item>
@@ -555,16 +570,73 @@
              </widget>
              <widget class="QWidget" name="chartsTab">
               <attribute name="title">
-               <string>Charts</string>
+               <string>Plots</string>
               </attribute>
-              <layout class="QGridLayout" name="gridLayout">
+              <layout class="QGridLayout" name="gridLayout_10">
                <item row="0" column="0">
-                <layout class="QVBoxLayout" name="chartsLayout">
-                 <item>
-                  <widget class="QComboBox" name="chartComboBox"/>
+                <widget class="QComboBox" name="chartComboBox"/>
+               </item>
+               <item row="1" column="0">
+                <layout class="QGridLayout" name="plotsGridLayout">
+                 <item row="1" column="1">
+                  <widget class="QFrame" name="plotFrame1">
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                  </widget>
                  </item>
-                 <item>
-                  <widget class="QGraphicsView" name="chartsGraphics"/>
+                 <item row="1" column="2">
+                  <widget class="QFrame" name="plotFrame2">
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="3">
+                  <widget class="QFrame" name="plotFrame3">
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="2">
+                  <widget class="QFrame" name="plotFrame5">
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="3">
+                  <widget class="QFrame" name="plotFrame6">
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QFrame" name="plotFrame4">
+                   <property name="frameShape">
+                    <enum>QFrame::StyledPanel</enum>
+                   </property>
+                   <property name="frameShadow">
+                    <enum>QFrame::Raised</enum>
+                   </property>
+                  </widget>
                  </item>
                 </layout>
                </item>
@@ -578,6 +650,41 @@
        </layout>
       </widget>
      </widget>
+    </item>
+    <item row="0" column="1">
+     <layout class="QGridLayout" name="loggingBoxLayout">
+      <property name="leftMargin">
+       <number>10</number>
+      </property>
+      <property name="topMargin">
+       <number>10</number>
+      </property>
+      <property name="rightMargin">
+       <number>10</number>
+      </property>
+      <property name="bottomMargin">
+       <number>10</number>
+      </property>
+      <item row="0" column="0">
+       <widget class="QPlainTextEdit" name="loggingBox">
+        <property name="minimumSize">
+         <size>
+          <width>100</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>200</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>
