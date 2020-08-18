@@ -572,71 +572,21 @@
               <attribute name="title">
                <string>Plots</string>
               </attribute>
-              <layout class="QGridLayout" name="gridLayout_10">
+              <layout class="QGridLayout" name="gridLayout_11">
                <item row="0" column="0">
-                <widget class="QComboBox" name="chartComboBox"/>
-               </item>
-               <item row="1" column="0">
-                <layout class="QGridLayout" name="plotsGridLayout">
-                 <item row="1" column="1">
-                  <widget class="QFrame" name="plotFrame1">
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                  </widget>
+                <layout class="QVBoxLayout" name="verticalLayout">
+                 <item>
+                  <widget class="QComboBox" name="chartComboBox"/>
                  </item>
-                 <item row="1" column="2">
-                  <widget class="QFrame" name="plotFrame2">
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
+                 <item>
+                  <layout class="QGridLayout" name="plotsGridLayout">
+                   <property name="leftMargin">
+                    <number>5</number>
                    </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
+                   <property name="rightMargin">
+                    <number>5</number>
                    </property>
-                  </widget>
-                 </item>
-                 <item row="1" column="3">
-                  <widget class="QFrame" name="plotFrame3">
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="2">
-                  <widget class="QFrame" name="plotFrame5">
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="3">
-                  <widget class="QFrame" name="plotFrame6">
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                  </widget>
-                 </item>
-                 <item row="2" column="1">
-                  <widget class="QFrame" name="plotFrame4">
-                   <property name="frameShape">
-                    <enum>QFrame::StyledPanel</enum>
-                   </property>
-                   <property name="frameShadow">
-                    <enum>QFrame::Raised</enum>
-                   </property>
-                  </widget>
+                  </layout>
                  </item>
                 </layout>
                </item>

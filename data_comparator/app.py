@@ -284,9 +284,10 @@ class ComparisonsComboBox(QComboBox):
 
 class Plot(FigureCanvasQTAgg):
     def __init__(self, parent=None):
-        fig = Figure()
-        self.axes = fig.add_subplot(111)
-        super(Plot, self).__init__(fig)
+        fig = Figure(figsize=(5, 4), dpi=100)
+        fig.clear()
+        self.ax = fig.add_subplot(111)
+        FigureCanvasQTAgg.__init__(self, fig)
 
 
 class LogStream(logging.StreamHandler):
@@ -311,14 +312,6 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.comparisons = []
         self.isPopulated = {"colList1": False, "colList2": False, "compTable": False}
-        # self.plot_frames = [
-        #     self.plotFrame1,
-        #     self.plotFrame2,
-        #     self.plotFrame3,
-        #     self.plotFrame4,
-        #     self.plotFrame5,
-        #     self.plotFrame6,
-        # ]
 
         uic.loadUi(MAIN_UI, self)
         self.setup_logger()
@@ -402,15 +395,41 @@ class MainWindow(QMainWindow):
 
     def create_plots(self, comp_df):
         rows = list(comp_df.index)
-        for index, row in enumerate(rows):
-            if row in NON_PLOT_ROWS:
-                continue
-            plot_model = Plot(self)
-            comp_df.loc[[row]].plot(ax=plot_model)
-            toolbar = NavigationToolbar(plot_model, self)
+        grid_mtx = (
+            [(0, i) for i in range(3)]
+            + [(1, i) for i in range(3)]
+            + [(2, i) for i in range(3)]
+        )
+        index = 0
+        colors = ["c", "m"]
+        for row in enumerate(rows):
+            row_name = row[1]
 
-            self.plot_frames[index].addWidget(toolbar)
-            self.plot_frames[index].addWidget(plot_model)
+            if row_name in NON_PLOT_ROWS:
+                continue
+
+            plot_model = Plot(self)
+            try:
+                comp_trimmed = comp_df.loc[:, comp_df.columns != "diff_col"].transpose()
+                plot_model.ax.axes.bar(
+                    x=list(comp_trimmed.index),
+                    height=comp_trimmed[row_name].tolist(),
+                    color=colors,
+                )
+                plot_model.ax.axes.set_title(row_name)
+            except Exception as e:
+                LOGGER.error("Encountered an error while creating plot")
+                LOGGER.error(e)
+
+            try:
+                row_num = grid_mtx[index][0]
+                column_num = grid_mtx[index][1]
+                self.plotsGridLayout.addWidget(plot_model, row_num, column_num)
+            except Exception as e:
+                LOGGER.error("Encountered an error while adding plot")
+                LOGGER.error(e)
+                
+            index += 1
 
     def compare(self):
         comp_name = self.comparisonsComboBox.currentText()
@@ -438,8 +457,8 @@ class MainWindow(QMainWindow):
         else:
             LOGGER.error("Datasets not available to make comparisons")
 
-        # if create_plots_checked and (comp_df != None):
-        #     self.create_plots(comp_df)
+        if create_plots_checked and not comp_df.empty:
+            self.create_plots(comp_df)
 
         self.comparisonsTabLayout.setCurrentIndex(1)
 
