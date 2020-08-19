@@ -284,7 +284,7 @@ class ComparisonsComboBox(QComboBox):
 
 class Plot(FigureCanvasQTAgg):
     def __init__(self, parent=None):
-        fig = Figure(figsize=(5, 4), dpi=100)
+        fig = Figure(figsize=(0.5, 0.5), dpi=42)
         fig.clear()
         self.ax = fig.add_subplot(111)
         FigureCanvasQTAgg.__init__(self, fig)
@@ -393,7 +393,16 @@ class MainWindow(QMainWindow):
         else:
             self.compareButton.setEnabled(False)
 
+    def _clear_plots(self):
+        for index in reversed(range(self.plotsGridLayout.count())):
+            self.plotsGridLayout.itemAt(index).widget().setParent(None)
+
     def create_plots(self, data, is_profile=False):
+        grid_mtx = (
+            [(0, i) for i in range(3)]
+            + [(1, i) for i in range(3)]
+            + [(2, i) for i in range(3)]
+        )
         if is_profile:
             plot_model = Plot(self)
             plot_model.ax.axes.boxplot(data)
@@ -401,11 +410,6 @@ class MainWindow(QMainWindow):
         else:
             rows = list(data.index)
             colors = ["c", "m"]
-            grid_mtx = (
-                [(0, i) for i in range(3)]
-                + [(1, i) for i in range(3)]
-                + [(2, i) for i in range(3)]
-            )
             index = 0
             for row in rows:
                 row_name = row
@@ -428,6 +432,9 @@ class MainWindow(QMainWindow):
                 try:
                     row_num = grid_mtx[index][0]
                     column_num = grid_mtx[index][1]
+                    plot_model.setSizePolicy(
+                        QSizePolicy.Expanding, QSizePolicy.Expanding
+                    )
                     self.plotsGridLayout.addWidget(plot_model, row_num, column_num)
                 except Exception as e:
                     LOGGER.error("Encountered an error while adding plot")
@@ -451,12 +458,14 @@ class MainWindow(QMainWindow):
         self.comparisonTable.setModel(self.comp_table_model)
         self.resetButton.setEnabled(True)
 
+        dtype = None
         try:
             dtype = profile.loc[["data_type"]].to_numpy()[0][0]
         except:
             LOGGER.error("Encountered an issue determining data type")
 
-        if create_plots_checked and not profile.empty and (dtype == "NumericColumn"):
+        self._clear_plots()
+        if create_plots_checked and (dtype == "NumericColumn"):
             self.create_plots(ds.dataframe[col], is_profile=True)
 
         self.comparisonsTabLayout.setCurrentIndex(1)
@@ -494,17 +503,16 @@ class MainWindow(QMainWindow):
         else:
             LOGGER.error("Datasets not available to make comparisons")
 
+        self._clear_plots()
         if create_plots_checked and not comp_df.empty:
             self.create_plots(comp_df)
 
         self.comparisonsTabLayout.setCurrentIndex(1)
 
     def reset(self):
-        # self.comparisonTable.setSpans()
-
-        # self.resetButton.setEnabled(False)
-        # self.comparisonsTabLayout.setCurrentIndex(1)
-        pass
+        # clear table
+        self._clear_plots()
+        self.resetButton.setEnabled(False)
 
     def add_comparison(self):
         colList1_indexes = self.dataset1Columns.selectedIndexes()

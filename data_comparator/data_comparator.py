@@ -19,7 +19,6 @@ from components.data_cupboard import DataCupboard
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
-LOGGER.debug("test")
 DATA_CUPBOARD = DataCupboard()
 
 # =============================================================================
@@ -381,9 +380,9 @@ def clear_comparisons():
 
 def profile(column: Column):
     col_full = ".".join((column.ds_name, column.name))
-    profile = pd.DataFrame.from_dict(column.get_summary(), orient="index")
-    profile = profile.rename(columns={0: col_full})
-    
+    profile_init = pd.DataFrame.from_dict(column.get_summary(), orient="index")
+    profile = profile_init.rename(columns={0: col_full})
+
     DATA_CUPBOARD.write_data("profile", col_full, profile)
 
     return profile
@@ -401,4 +400,5 @@ def clear_all():
 def view(comp_name):
     comp = DATA_CUPBOARD.read_data("comparison", comp_name)
     print(comp.dataframe)
+
 

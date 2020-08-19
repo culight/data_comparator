@@ -10,6 +10,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 import re
+import json
 
 import pandas as pd
 from PyQt5.QtWidgets import QProgressBar
@@ -30,6 +31,10 @@ ACCEPTED_INPUT_FORMATS = [
     "json",
     "txt",
 ]
+
+
+VALID_FILE = "components/validations_config.json"
+validations = {}
 
 logging.basicConfig(
     stream=sys.stdout, format="%(asctime)s - %(message)s", level=logging.DEBUG
@@ -64,6 +69,8 @@ class Dataset(object):
                 # count object types in size
                 self.size = self.dataframe.memory_usage(deep=True).sum()
 
+        global validations
+        validations = self.load_validations()
         self._prepare_columns()
 
     def __getitem__(self, item):
@@ -231,6 +238,16 @@ class Dataset(object):
 
         return cols_oftype
 
+    def load_validations(self):
+        validation_data = None
+        with open(VALID_FILE, "r") as read_file:
+            validation_data = json.load(read_file)
+
+        assert validation_data, LOGGER.error(
+            "Error encountered ehile loading validations"
+        )
+        return validation_data["type"]
+
 
 class Column(object):
     def __init__(self, raw_column, ds_name):
@@ -275,7 +292,7 @@ class StringColumn(Column):
         }
 
     def perform_check(self, row_limit=-1) -> dict:
-        return check_string_column(self, row_limit)
+        return check_string_column(self, validations["string"], row_limit)
 
 
 class NumericColumn(Column):
@@ -303,7 +320,7 @@ class NumericColumn(Column):
         }
 
     def perform_check(self) -> dict:
-        return check_numeric_column(self)
+        return check_numeric_column(self, validations["numeric"])
 
 
 class TemporalColumn(Column):
@@ -330,7 +347,7 @@ class TemporalColumn(Column):
         }
 
     def perform_check(self) -> dict:
-        return check_temporal_column(self)
+        return check_temporal_column(self, validations["temporal"])
 
 
 class BooleanColumn(Column):
@@ -350,4 +367,5 @@ class BooleanColumn(Column):
         }
 
     def perform_check(self) -> dict:
-        return check_boolean_column(self)
+        return check_boolean_column(self, validations["boolean"])
+
