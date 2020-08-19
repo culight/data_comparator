@@ -263,9 +263,9 @@ class ComparisonOutputTableModel(QAbstractTableModel):
 class DatasetColumnsListModel(QAbstractListModel):
     def __init__(self, dataset=None, parent=None):
         super(DatasetColumnsListModel, self).__init__(parent)
-        self.cols = []
+        self.cols = ["====="]
         if dataset != None:
-            self.cols = list(dataset.columns.keys())
+            self.cols = self.cols + list(dataset.columns.keys())
 
     def data(self, index, role=Qt.DisplayRole):
         if role == Qt.DisplayRole:
@@ -393,49 +393,86 @@ class MainWindow(QMainWindow):
         else:
             self.compareButton.setEnabled(False)
 
-    def create_plots(self, comp_df):
-        rows = list(comp_df.index)
-        grid_mtx = (
-            [(0, i) for i in range(3)]
-            + [(1, i) for i in range(3)]
-            + [(2, i) for i in range(3)]
-        )
-        index = 0
-        colors = ["c", "m"]
-        for row in enumerate(rows):
-            row_name = row[1]
-
-            if row_name in NON_PLOT_ROWS:
-                continue
-
+    def create_plots(self, data, is_profile=False):
+        if is_profile:
             plot_model = Plot(self)
-            try:
-                comp_trimmed = comp_df.loc[:, comp_df.columns != "diff_col"].transpose()
-                plot_model.ax.axes.bar(
-                    x=list(comp_trimmed.index),
-                    height=comp_trimmed[row_name].tolist(),
-                    color=colors,
-                )
-                plot_model.ax.axes.set_title(row_name)
-            except Exception as e:
-                LOGGER.error("Encountered an error while creating plot")
-                LOGGER.error(e)
+            plot_model.ax.axes.boxplot(data)
+            self.plotsGridLayout.addWidget(plot_model, 0, 0)
+        else:
+            rows = list(data.index)
+            colors = ["c", "m"]
+            grid_mtx = (
+                [(0, i) for i in range(3)]
+                + [(1, i) for i in range(3)]
+                + [(2, i) for i in range(3)]
+            )
+            index = 0
+            for row in rows:
+                row_name = row
+                if row_name in NON_PLOT_ROWS:
+                    continue
 
-            try:
-                row_num = grid_mtx[index][0]
-                column_num = grid_mtx[index][1]
-                self.plotsGridLayout.addWidget(plot_model, row_num, column_num)
-            except Exception as e:
-                LOGGER.error("Encountered an error while adding plot")
-                LOGGER.error(e)
-                
-            index += 1
+                plot_model = Plot(self)
+                try:
+                    comp_trimmed = data.loc[:, data.columns != "diff_col"].transpose()
+                    plot_model.ax.axes.bar(
+                        x=list(comp_trimmed.index),
+                        height=comp_trimmed[row_name].tolist(),
+                        color=colors,
+                    )
+                    plot_model.ax.axes.set_title(row_name)
+                except Exception as e:
+                    LOGGER.error("Encountered an error while creating plot")
+                    LOGGER.error(e)
+
+                try:
+                    row_num = grid_mtx[index][0]
+                    column_num = grid_mtx[index][1]
+                    self.plotsGridLayout.addWidget(plot_model, row_num, column_num)
+                except Exception as e:
+                    LOGGER.error("Encountered an error while adding plot")
+                    LOGGER.error(e)
+
+                index += 1
+
+    def profile(self, col, ds):
+        perform_validations = self.performValidationsCheckbox.isChecked()
+        create_plots_checked = self.createVizCheckbox.isChecked()
+
+        profile = dc.profile(ds[col])
+
+        try:
+            dtype = profile.loc[["data_type"]][0][0]
+            print("type is: ", dtype)
+        except Exception as e:
+            print(e)
+
+        self.comp_table_model = ComparisonOutputTableModel(profile)
+        self.comparisonTable.setModel(self.comp_table_model)
+        self.resetButton.setEnabled(True)
+
+        try:
+            dtype = profile.loc[["data_type"]].to_numpy()[0][0]
+        except:
+            LOGGER.error("Encountered an issue determining data type")
+
+        if create_plots_checked and not profile.empty and (dtype == "NumericColumn"):
+            self.create_plots(ds.dataframe[col], is_profile=True)
+
+        self.comparisonsTabLayout.setCurrentIndex(1)
 
     def compare(self):
         comp_name = self.comparisonsComboBox.currentText()
         col1, col2 = comp_name.split("-")
-        compare_by_col = col1 == col2
 
+        # this is a profiling combination
+        is_profile = (col1 == "=====") | (col2 == "=====")
+        if is_profile:
+            col_info = (col1, DATASET1) if "==" in col2 else (col2, DATASET2)
+            self.profile(col_info[0], col_info[1])
+            return
+
+        compare_by_col = col1 == col2
         add_diff_col = self.addDiffCheckbox.isChecked()
         perform_validations = self.performValidationsCheckbox.isChecked()
         create_plots_checked = self.createVizCheckbox.isChecked()
@@ -484,14 +521,22 @@ class MainWindow(QMainWindow):
         col1 = self.dataset1Columns_model.data(colList1_index)
         col2 = self.dataset2Columns_model.data(colList2_index)
 
-        # make sure types match
-        if not self._is_matching_type(col1, col2):
-            LOGGER.error(
-                "{} is of type {} and {} is of type {}. Comparisons must be of same type".format(
-                    col1, DATASET1[col1].data_type, col2, DATASET2[col2].data_type
-                )
-            )
+        is_profile = (col1 == "=====") | (col2 == "=====")
+        null_case = (col1 == "=====") & (col2 == "=====")
+
+        if null_case:
+            LOGGER.error("Not a valid comparison/profiling option")
             return
+
+        # make sure types match
+        if not is_profile:
+            if not self._is_matching_type(col1, col2):
+                LOGGER.error(
+                    "{} is of type {} and {} is of type {}. Comparisons must be of same type".format(
+                        col1, DATASET1[col1].data_type, col2, DATASET2[col2].data_type
+                    )
+                )
+                return
 
         comp_name = "{}-{}".format(col1, col2)
 
@@ -512,8 +557,8 @@ class MainWindow(QMainWindow):
         self._update_setup()
 
     def add_comparisons(self):
-        colList1_cols = self.dataset1Columns_model.cols
-        colList2_cols = self.dataset2Columns_model.cols
+        colList1_cols = self.dataset1Columns_model.cols[1:]
+        colList2_cols = self.dataset2Columns_model.cols[1:]
 
         common_cols = list(set(colList1_cols).intersection(set(colList2_cols)))
 
@@ -596,9 +641,7 @@ class MainWindow(QMainWindow):
             self.dataset1Columns_model = DatasetColumnsListModel(DATASET1)
             self.dataset1Columns.setModel(self.dataset1Columns_model)
 
-            self.isPopulated["colList1"] = (
-                True if self.dataset1Columns_model.rowCount() > 0 else False
-            )
+            self.isPopulated["colList1"] = True if len(DATASET1.columns) > 0 else False
 
             # set dataframe table
             self.dataframe1Table_model = DataframeTableModel(DATASET1.dataframe)

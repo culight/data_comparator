@@ -379,28 +379,14 @@ def clear_comparisons():
     print("\nDone")
 
 
-def profile(dataset: Dataset, col_list: list, name: str = None):
-    assert isinstance(
-        dataset.__class__, Dataset.__class__
-    ), "Data source must be of type 'Dataset'"
-    ds_profile = {}
-    if "*" in col_list:
-        for col in dataset.columns:
-            col_full = dataset.name + "." + col.name
-            ds_profile[col_full] = col.get_summary()
+def profile(column: Column):
+    col_full = ".".join((column.ds_name, column.name))
+    profile = pd.DataFrame.from_dict(column.get_summary(), orient="index")
+    profile = profile.rename(columns={0: col_full})
+    
+    DATA_CUPBOARD.write_data("profile", col_full, profile)
 
-    for col_name in col_list:
-        col = dataset.columns[col_name]
-        col_full = dataset.name + "." + col.name
-        ds_profile[col_full] = col.get_summary()
-
-    if name:
-        DATA_CUPBOARD.write_data("profile", name, ds_profile)
-    else:
-        profile_name = "profile_" + len(DATA_CUPBOARD.read_data("profile"))
-        DATA_CUPBOARD.write_data("profile", profile_name, ds_profile)
-
-    return ds_profile
+    return profile
 
 
 def pop_all():

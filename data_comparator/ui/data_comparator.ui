@@ -576,15 +576,12 @@
                <item row="0" column="0">
                 <layout class="QVBoxLayout" name="verticalLayout">
                  <item>
-                  <widget class="QComboBox" name="chartComboBox"/>
-                 </item>
-                 <item>
                   <layout class="QGridLayout" name="plotsGridLayout">
                    <property name="leftMargin">
-                    <number>5</number>
+                    <number>0</number>
                    </property>
                    <property name="rightMargin">
-                    <number>5</number>
+                    <number>0</number>
                    </property>
                   </layout>
                  </item>
