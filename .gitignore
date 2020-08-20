@@ -11,3 +11,4 @@ __pycache__/
 #ignore file types
 *.csv
 *.parquet
+*.log
