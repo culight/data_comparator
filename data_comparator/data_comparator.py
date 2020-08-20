@@ -241,6 +241,8 @@ def compare(
     assert data_source1 and data_source2, "Two datasets must be provided for comparison"
 
     # need to first process raw data sources into dataset objects
+    data_src1 = ds_pair1[0]
+    data_src2 = ds_pair2[0]
     ds1, ds2 = load_datasets(
         data_source1,
         data_source2,
@@ -400,5 +402,4 @@ def clear_all():
 def view(comp_name):
     comp = DATA_CUPBOARD.read_data("comparison", comp_name)
     print(comp.dataframe)
-
 

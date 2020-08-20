@@ -92,6 +92,14 @@ class Dataset(object):
     def __name__(self):
         return self.name
 
+    @classmethod
+    def to_yaml(cls, representer, node):
+        tag = getattr(cls, "yaml_tag", "!" + cls.__name__)
+
+    @classmethod
+    def from_yaml(cls, constructor, node):
+        return cls(*node.value.split("-"))
+
     def _get_input_format(self) -> str:
         suffix = self.path.suffix.replace(".", "")
         if suffix not in ACCEPTED_INPUT_FORMATS:
