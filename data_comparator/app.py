@@ -1,18 +1,14 @@
-import PyQt5
 from components.dataset import Dataset
-import os
 import sys
 import logging
 from pathlib import Path
-
-import data_comparator as dc
+import json
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtPrintSupport import *
 from PyQt5 import uic
-
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg,
@@ -20,13 +16,17 @@ from matplotlib.backends.backend_qt5agg import (
 )
 from matplotlib.figure import Figure
 
+import data_comparator as dc
+
 MAIN_UI = "ui/data_comparator.ui"
 DETAIL_DLG = "ui/data_detail_dialog.ui"
+VALID_FILE = "components/validations_config.json"
 ACCEPTED_INPUT_FORMATS = ["sas7bdat", "csv", "parquet", "json"]
 NON_PLOT_ROWS = ["ds_name", "name", "data_type"]
 
 DATASET1 = None
 DATASET2 = None
+VALIDS = {}
 
 logging.basicConfig(
     stream=sys.stdout, format="%(asctime)s - %(message)s", level=logging.DEBUG
@@ -260,6 +260,58 @@ class ComparisonOutputTableModel(QAbstractTableModel):
         return None
 
 
+class ConfigItemDelegate(QItemDelegate):
+    def __init__(self):
+        QItemDelegate.__init__(self)
+
+    def createEditor(self, parent, option, index):
+        if index.column() == 3:
+            combo = QComboBox(parent)
+            return combo
+        elif index.column() == 4:
+            lineedit = QLineEdit(parent)
+            return lineedit
+
+    def setEditorData(self, editor, index):
+        row = index.row()
+        column = index.column()
+        value = list(index.model().data[row].values())[column]
+        if isinstance(editor, QComboBox):
+            editor.addItems(["True", "False"])
+            editor.setCurrentIndex(index.row())
+        elif isinstance(editor, QLineEdit):
+            editor.setText("Somewhere over the rainbow")
+        else:
+            editor.addText(value)
+
+
+class ConfigTableModel(QAbstractTableModel):
+    def __init__(self, data):
+        QAbstractTableModel.__init__(self)
+        self.header = ["Name", "Type", "Enabled", "Value", "Fields"]
+        self.data = data
+
+    def flags(self, index):
+        return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
+
+    def rowCount(self, parent=QModelIndex()):
+        return len(self.data)
+
+    def columnCount(self, parent=QModelIndex()):
+        return 5
+
+    def data(self, index, role=Qt.DisplayRole):
+        if index.isValid():
+            if role == Qt.DisplayRole or role == Qt.EditRole:
+                return list(self.data[index.row()].values())[index.column()]
+        return None
+
+    def headerData(self, col, orientation, role):
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return self.header[col]
+        return None
+
+
 class DatasetColumnsListModel(QAbstractListModel):
     def __init__(self, dataset=None, parent=None):
         super(DatasetColumnsListModel, self).__init__(parent)
@@ -311,15 +363,29 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.comparisons = []
+        self.config_items = []
         self.isPopulated = {"colList1": False, "colList2": False, "compTable": False}
 
         uic.loadUi(MAIN_UI, self)
+
+        # set up logger
         self.setup_logger()
+
+        # set up select file buttons
         self.dataset1_select_file_button = SelectFileButton(
             self.dataset1FileLoad, 1, self
         )
         self.dataset2_select_file_button = SelectFileButton(
             self.dataset2FileLoad, 2, self
+        )
+
+        # set up config table
+        self.config_items = self._read_json()
+        self.configTableModel = ConfigTableModel(self.config_items)
+        self.configTable.setModel(self.configTableModel)
+        # self.configTable.setItemDelegateForColumn(3, ConfigItemDelegate(self))
+        self.dataframe2Table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.Interactive
         )
 
         # set up column select
@@ -397,12 +463,32 @@ class MainWindow(QMainWindow):
         for index in reversed(range(self.plotsGridLayout.count())):
             self.plotsGridLayout.itemAt(index).widget().setParent(None)
 
-    def create_plots(self, data, is_profile=False):
-        grid_mtx = (
-            [(0, i) for i in range(3)]
-            + [(1, i) for i in range(3)]
-            + [(2, i) for i in range(3)]
+    def _write_json(self):
+        pass
+
+    def _read_json(self):
+        validation_data = None
+        with open(VALID_FILE, "r") as read_file:
+            validation_data = json.load(read_file)
+
+        assert validation_data, LOGGER.error(
+            "Error encountered while loading validations"
         )
+
+        config_items = []
+        for val_name, entries in validation_data["type"].items():
+            for val_type, val_settings in entries.items():
+                config_dict = {}
+                config_dict["type"] = val_type
+                config_dict["name"] = val_name
+                config_dict["enabled"] = val_settings["enabled"]
+                config_dict["value"] = val_settings["value"]
+                config_dict["fields"] = val_settings["fields"]
+                config_items.append(config_dict)
+
+        return config_items
+
+    def create_plots(self, data, is_profile=False):
         if is_profile:
             plot_model = Plot(self)
             plot_model.ax.axes.boxplot(data)
@@ -410,6 +496,11 @@ class MainWindow(QMainWindow):
         else:
             rows = list(data.index)
             colors = ["c", "m"]
+            grid_mtx = (
+                [(0, i) for i in range(3)]
+                + [(1, i) for i in range(3)]
+                + [(2, i) for i in range(3)]
+            )
             index = 0
             for row in rows:
                 row_name = row

@@ -55,7 +55,7 @@
             },
             "field_length": {
                 "enabled": false,
-                "value": "",
+                "value": 5,
                 "fields": []
             },
             "contains": {
