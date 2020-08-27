@@ -9,12 +9,13 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtPrintSupport import *
 from PyQt5 import uic
+
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg,
     NavigationToolbar2QT as NavigationToolbar,
 )
-from matplotlib.figure import Figure
 
 import data_comparator as dc
 
@@ -260,29 +261,56 @@ class ComparisonOutputTableModel(QAbstractTableModel):
         return None
 
 
-class ConfigItemDelegate(QItemDelegate):
-    def __init__(self):
-        QItemDelegate.__init__(self)
+class LineEditDelegate(QItemDelegate):
+    def __init__(self, parent, setting):
+        QItemDelegate.__init__(self, parent)
+        self.setting = setting
 
+    def _is_valid(self, value):
+        if self.setting == 'value':
+            try:
+                float(value)
+            except ValueError:
+                LOGGER.error("Value must be numeric")
+                return False
+            return True
+        elif self.setting == 'field':
+            try:
+                value.split(",")
+            except AttributeError:
+                LOGGER.error("Must provide fields in the follwing form: field1, field2, ...")
+                return False
+            return True
+            
     def createEditor(self, parent, option, index):
-        if index.column() == 3:
-            combo = QComboBox(parent)
-            return combo
-        elif index.column() == 4:
-            lineedit = QLineEdit(parent)
-            return lineedit
+        lineedit = QLineEdit(parent)
+        return lineedit
 
+    def setModelData(self, editor, model, index):
+        value = editor.text()
+        value_pair = (value, self.setting)
+        model.setData(index, value_pair, Qt.DisplayRole)
+
+
+class ComboBoxDelegate(QItemDelegate):
+    def __init__(self, parent):
+        QItemDelegate.__init__(self, parent)
+        self.choices = ['True', 'False']
+        
+    def createEditor(self, parent, option, index):
+        combobox = QComboBox(parent)
+        combobox.addItems(self.choices)
+        return combobox
+        
     def setEditorData(self, editor, index):
-        row = index.row()
-        column = index.column()
-        value = list(index.model().data[row].values())[column]
-        if isinstance(editor, QComboBox):
-            editor.addItems(["True", "False"])
-            editor.setCurrentIndex(index.row())
-        elif isinstance(editor, QLineEdit):
-            editor.setText("Somewhere over the rainbow")
-        else:
-            editor.addText(value)
+        value = index.data(Qt.DisplayRole)
+        num = self.choices.index(value)
+        editor.setCurrentIndex(num)
+
+    def setModelData(self, editor, model, index):
+        value = editor.currentText()
+        value_pair = (value, 'enabled')
+        model.setData(index, value_pair, Qt.DisplayRole)
 
 
 class ConfigTableModel(QAbstractTableModel):
@@ -292,7 +320,10 @@ class ConfigTableModel(QAbstractTableModel):
         self.data = data
 
     def flags(self, index):
-        return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
+        if index.column() in [2, 3, 4]:
+            return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
+        else:
+            return Qt.ItemIsEnabled
 
     def rowCount(self, parent=QModelIndex()):
         return len(self.data)
@@ -301,10 +332,14 @@ class ConfigTableModel(QAbstractTableModel):
         return 5
 
     def data(self, index, role=Qt.DisplayRole):
-        if index.isValid():
-            if role == Qt.DisplayRole or role == Qt.EditRole:
-                return list(self.data[index.row()].values())[index.column()]
+        if role == Qt.DisplayRole:
+            return list(self.data[index.row()].values())[index.column()]
         return None
+    
+    def setData(self, index, value, role):
+        if role == Qt.DisplayRole:
+            self.data[index.row()][value[1]] = value[0]
+        return True
 
     def headerData(self, col, orientation, role):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
@@ -383,7 +418,10 @@ class MainWindow(QMainWindow):
         self.config_items = self._read_json()
         self.configTableModel = ConfigTableModel(self.config_items)
         self.configTable.setModel(self.configTableModel)
-        # self.configTable.setItemDelegateForColumn(3, ConfigItemDelegate(self))
+        self.configTable.setItemDelegateForColumn(2, ComboBoxDelegate(self))
+        self.configTable.setItemDelegateForColumn(3, LineEditDelegate(self, 'value'))
+        self.configTable.setItemDelegateForColumn(4, LineEditDelegate(self, 'fields'))
+
         self.dataframe2Table.horizontalHeader().setSectionResizeMode(
             QHeaderView.Interactive
         )
@@ -479,9 +517,9 @@ class MainWindow(QMainWindow):
         for val_name, entries in validation_data["type"].items():
             for val_type, val_settings in entries.items():
                 config_dict = {}
-                config_dict["type"] = val_type
-                config_dict["name"] = val_name
-                config_dict["enabled"] = val_settings["enabled"]
+                config_dict["type"] = val_type.replace('_', ' ').title()
+                config_dict["name"] = val_name.title()
+                config_dict["enabled"] = 'True' if val_settings["enabled"] else 'False'
                 config_dict["value"] = val_settings["value"]
                 config_dict["fields"] = val_settings["fields"]
                 config_items.append(config_dict)
