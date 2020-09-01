@@ -1,3 +1,4 @@
+from logging import Logger
 from components.dataset import Dataset
 import sys
 import logging
@@ -260,6 +261,9 @@ class ComparisonOutputTableModel(QAbstractTableModel):
             return self.vertical_header[col]
         return None
 
+    def clear(self):
+        self.df = self.df.iloc[0:0]
+
 
 class LineEditDelegate(QItemDelegate):
     def __init__(self, parent, setting):
@@ -281,7 +285,7 @@ class LineEditDelegate(QItemDelegate):
                 LOGGER.error("Must provide fields in the follwing form: field1, field2, ...")
                 return False
             return True
-            
+
     def createEditor(self, parent, option, index):
         lineedit = QLineEdit(parent)
         return lineedit
@@ -339,6 +343,7 @@ class ConfigTableModel(QAbstractTableModel):
     def setData(self, index, value, role):
         if role == Qt.DisplayRole:
             self.data[index.row()][value[1]] = value[0]
+        
         return True
 
     def headerData(self, col, orientation, role):
@@ -399,7 +404,8 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.comparisons = []
         self.config_items = []
-        self.isPopulated = {"colList1": False, "colList2": False, "compTable": False}
+        self.config_names = []
+        self.isPopulated = {"colList1": False, "colList2": False, "compList": False, "compTable": False}
 
         uic.loadUi(MAIN_UI, self)
 
@@ -416,16 +422,14 @@ class MainWindow(QMainWindow):
 
         # set up config table
         self.config_items = self._read_json()
+        self.config_names = [i['name'].replace(' ', '_').lower() for i in self.config_items]
         self.configTableModel = ConfigTableModel(self.config_items)
         self.configTable.setModel(self.configTableModel)
         self.configTable.setItemDelegateForColumn(2, ComboBoxDelegate(self))
         self.configTable.setItemDelegateForColumn(3, LineEditDelegate(self, 'value'))
         self.configTable.setItemDelegateForColumn(4, LineEditDelegate(self, 'fields'))
-
-        self.dataframe2Table.horizontalHeader().setSectionResizeMode(
-            QHeaderView.Interactive
-        )
-
+        self.configTable.resizeColumnToContents(1)
+        
         # set up column select
         self.dataset1Columns_model = None
         self.dataset2Columns_model = None
@@ -492,7 +496,7 @@ class MainWindow(QMainWindow):
         self.comparisonsComboBox.addItems(comp_names)
 
         # update compare and reset buttons
-        if self.isPopulated["compTable"]:
+        if self.isPopulated["compList"]:
             self.compareButton.setEnabled(True)
         else:
             self.compareButton.setEnabled(False)
@@ -501,8 +505,31 @@ class MainWindow(QMainWindow):
         for index in reversed(range(self.plotsGridLayout.count())):
             self.plotsGridLayout.itemAt(index).widget().setParent(None)
 
-    def _write_json(self):
-        pass
+    def _write_json(self, validation_data):
+        assert validation_data, LOGGER.error("Validation data not found")
+        
+        config_items = {
+            'type':
+            {
+                'numeric': {},
+                'string': {},
+                'temporal': {},
+                'boolean': {}
+            }
+        }
+        for entry in validation_data:
+            vld_type = entry['type'].lower()
+            vld_name = entry['name'].replace(' ', '_').lower()
+            config_items['type'][vld_type][vld_name] = {
+                'enabled': True if entry['enabled'] == 'True' else False,
+                'value': entry['value'],
+                'fields': entry['fields']
+            }
+        
+        with open(VALID_FILE, "w") as write_file:
+            json.dump(config_items, write_file)
+        
+        return config_items
 
     def _read_json(self):
         validation_data = None
@@ -514,16 +541,16 @@ class MainWindow(QMainWindow):
         )
 
         config_items = []
-        for val_name, entries in validation_data["type"].items():
-            for val_type, val_settings in entries.items():
+        for val_type, entries in validation_data["type"].items():
+            for val_name, val_settings in entries.items():
                 config_dict = {}
-                config_dict["type"] = val_type.replace('_', ' ').title()
-                config_dict["name"] = val_name.title()
+                config_dict["name"] = val_name.replace('_', ' ').title()
+                config_dict["type"] = val_type.title()
                 config_dict["enabled"] = 'True' if val_settings["enabled"] else 'False'
                 config_dict["value"] = val_settings["value"]
                 config_dict["fields"] = val_settings["fields"]
                 config_items.append(config_dict)
-
+        
         return config_items
 
     def create_plots(self, data, is_profile=False):
@@ -600,23 +627,33 @@ class MainWindow(QMainWindow):
         self.comparisonsTabLayout.setCurrentIndex(1)
 
     def compare(self):
+        
+        # start with clean slate
+        self.reset()
+
+        # get comparison names
         comp_name = self.comparisonsComboBox.currentText()
         col1, col2 = comp_name.split("-")
 
-        # this is a profiling combination
+        # is this a profiling combination?
         is_profile = (col1 == "=====") | (col2 == "=====")
         if is_profile:
             col_info = (col1, DATASET1) if "==" in col2 else (col2, DATASET2)
             self.profile(col_info[0], col_info[1])
             return
 
+        # retreive comparison settings
         compare_by_col = col1 == col2
         add_diff_col = self.addDiffCheckbox.isChecked()
         perform_validations = self.performValidationsCheckbox.isChecked()
         create_plots_checked = self.createVizCheckbox.isChecked()
 
+        # make comparisons
         comp_df = None
         if DATASET1 != None and DATASET2 != None:
+            # update validation settings
+            self._write_json(self.configTableModel.data)
+
             comp_df = dc.compare_ds(
                 col1=DATASET1[col1],
                 col2=DATASET2[col2],
@@ -634,6 +671,11 @@ class MainWindow(QMainWindow):
 
         self._clear_plots()
         if create_plots_checked and not comp_df.empty:
+            # remove validation fields 
+            if perform_validations:
+                cols_to_drop = [col for col in list(comp_df.index) if col in self.config_names]
+                if cols_to_drop:
+                    comp_df = comp_df.drop(cols_to_drop)
             self.create_plots(comp_df)
 
         self.comparisonsTabLayout.setCurrentIndex(1)
@@ -641,6 +683,9 @@ class MainWindow(QMainWindow):
     def reset(self):
         # clear table
         self._clear_plots()
+        if self.isPopulated['compTable']:
+            self.comp_table_model.clear()
+        dc.clear_comparisons()
         self.resetButton.setEnabled(False)
 
     def add_comparison(self):
@@ -685,9 +730,9 @@ class MainWindow(QMainWindow):
         self.comparisons.append([comp_name, col1, col2])
         self.comparisonColumnsTable.model().layoutChanged.emit()
 
-        self.isPopulated["compTable"] = len(self.comparisons) > 0
+        self.isPopulated["compList"] = len(self.comparisons) > 0
 
-        if self.isPopulated["compTable"]:
+        if self.isPopulated["compList"]:
             self.remove_one_button.button.setEnabled(True)
             self.remove_all_button.button.setEnabled(True)
 
@@ -706,6 +751,9 @@ class MainWindow(QMainWindow):
         for col in common_cols:
             col1 = col
             col2 = col
+            if DATASET1[col1].data_type != DATASET2[col2].data_type:
+                LOGGER.error("{} is of type and {} is of type. Could not be compare".format(col1, col2))
+                continue
             comp_name = "{}-{}".format(col1, col2)
             if not self._is_novel_comparison(comp_name):
                 LOGGER.error("Comparison {} already exists".format(comp_name))
@@ -713,9 +761,9 @@ class MainWindow(QMainWindow):
             self.comparisons.append([comp_name, col1, col2])
         self.comparisonColumnsTable.model().layoutChanged.emit()
 
-        self.isPopulated["compTable"] = len(self.comparisons) > 0
+        self.isPopulated["compList"] = len(self.comparisons) > 0
 
-        if self.isPopulated["compTable"]:
+        if self.isPopulated["compList"]:
             self.remove_one_button.button.setEnabled(True)
             self.remove_all_button.button.setEnabled(True)
             self.add_all_button.button.setEnabled(False)
@@ -733,9 +781,9 @@ class MainWindow(QMainWindow):
             del self.comparisons[index.row()]
         self.comparisonColumnsTable.model().layoutChanged.emit()
 
-        self.isPopulated["compTable"] = len(self.comparisons) > 0
+        self.isPopulated["compList"] = len(self.comparisons) > 0
 
-        if not self.isPopulated["compTable"]:
+        if not self.isPopulated["compList"]:
             self.remove_one_button.button.setEnabled(False)
             self.remove_all_button.button.setEnabled(False)
             self.add_all_button.button.setEnabled(True)
@@ -743,16 +791,16 @@ class MainWindow(QMainWindow):
         self._update_setup()
 
     def clear_comparisons(self):
-        if not self.isPopulated["compTable"]:
+        if not self.isPopulated["compList"]:
             LOGGER.error("No rows to delete")
             return
 
         self.comparisons.clear()
         self.comparisonColumnsTable.model().layoutChanged.emit()
 
-        self.isPopulated["compTable"] = len(self.comparisons) > 0
+        self.isPopulated["compList"] = len(self.comparisons) > 0
 
-        if not self.isPopulated["compTable"]:
+        if not self.isPopulated["compList"]:
             self.remove_one_button.button.setEnabled(False)
             self.remove_all_button.button.setEnabled(False)
             self.add_all_button.button.setEnabled(True)

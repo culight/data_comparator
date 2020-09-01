@@ -34,7 +34,6 @@ ACCEPTED_INPUT_FORMATS = [
 
 
 VALID_FILE = "components/validations_config.json"
-validations = {}
 
 logging.basicConfig(
     stream=sys.stdout, format="%(asctime)s - %(message)s", level=logging.DEBUG
@@ -69,8 +68,6 @@ class Dataset(object):
                 # count object types in size
                 self.size = self.dataframe.memory_usage(deep=True).sum()
 
-        global validations
-        validations = self.load_validations()
         self._prepare_columns()
 
     def __getitem__(self, item):
@@ -246,16 +243,6 @@ class Dataset(object):
 
         return cols_oftype
 
-    def load_validations(self):
-        validation_data = None
-        with open(VALID_FILE, "r") as read_file:
-            validation_data = json.load(read_file)
-
-        assert validation_data, LOGGER.error(
-            "Error encountered ehile loading validations"
-        )
-        return validation_data["type"]
-
 
 class Column(object):
     def __init__(self, raw_column, ds_name):
@@ -268,6 +255,18 @@ class Column(object):
 
     def __eq__(self, other_col):
         return other_col.__class__ == self.__class__
+    
+    def load_validation_settings(self):
+        validation_data = None
+        if not validation_data:
+            with open(VALID_FILE, "r") as read_file:
+                validation_data = json.load(read_file)
+
+        assert validation_data, LOGGER.error(
+            "Error encountered while loading validations"
+        )
+
+        return validation_data["type"]
 
 
 class StringColumn(Column):
@@ -300,7 +299,8 @@ class StringColumn(Column):
         }
 
     def perform_check(self, row_limit=-1) -> dict:
-        return check_string_column(self, validations["string"], row_limit)
+        validation_settings = self.load_validation_settings()
+        return check_string_column(self, validation_settings["string"], row_limit)
 
 
 class NumericColumn(Column):
@@ -328,7 +328,8 @@ class NumericColumn(Column):
         }
 
     def perform_check(self) -> dict:
-        return check_numeric_column(self, validations["numeric"])
+        validation_settings = self.load_validation_settings()
+        return check_numeric_column(self, validation_settings["numeric"])
 
 
 class TemporalColumn(Column):
@@ -355,7 +356,8 @@ class TemporalColumn(Column):
         }
 
     def perform_check(self) -> dict:
-        return check_temporal_column(self, validations["temporal"])
+        validation_settings = self.load_validation_settings()
+        return check_temporal_column(self, validation_settings["temporal"])
 
 
 class BooleanColumn(Column):
@@ -375,5 +377,6 @@ class BooleanColumn(Column):
         }
 
     def perform_check(self) -> dict:
-        return check_boolean_column(self, validations["boolean"])
+        validation_settings = self.load_validation_settings()
+        return check_boolean_column(self, validation_settings["boolean"])
 

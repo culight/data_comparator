@@ -26,6 +26,8 @@ def check_string_column(column, validations, row_limit=None):
         if settings["enabled"] and doCheck:
             string_checks[case] = ""
 
+    print(string_checks)
+
     spec_chars = set(string.punctuation)
 
     print("\nPerforming check for string column...")
@@ -96,14 +98,14 @@ def check_string_column(column, validations, row_limit=None):
 
             if "contains" in string_checks:
                 if not string_checks["contains"]:
-                    if row_content in validations["contains"]["value"]:
+                    if row_content in validations["contains"]["value"].split(','):
                         string_checks["contains"] = row_content
 
     return string_checks
 
 
 def check_numeric_column(column, validations):
-    df = column.to_frame()
+    df = column.data.to_frame()
 
     numeric_checks = {}
     for case, settings in validations.items():
@@ -128,24 +130,18 @@ def check_numeric_column(column, validations):
             numeric_checks["susp_zero_count"] = str(zero_perc)
 
     if "value_threshold_upper" in numeric_checks:
-        df = column.data
         value = None
-        try:
-            value = df[
-                (df > validations["value_threshold_upper"]["value"]).any(1)
-            ].iloc[0][0]
+        try:      
+            value = df[df[column.name] > float(validations["value_threshold_upper"]["value"])].iloc[0][0]
         except IndexError:
             pass  # add logger
         if value:
             numeric_checks["value_threshold_upper"] = str(value)
 
     if "value_threshold_lower" in numeric_checks:
-        df = column.data
         value = None
         try:
-            value = df[
-                (df > validations["value_threshold_upper"]["value"]).any(1)
-            ].iloc[0][0]
+            value = df[df[column.name] < float(validations["value_threshold_lower"]["value"])].iloc[0][0]
         except IndexError:
             pass  # add logger
         if value:
