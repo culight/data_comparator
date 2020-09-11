@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>594</width>
-    <height>341</height>
+    <width>807</width>
+    <height>629</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -34,8 +34,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>359</width>
-         <height>285</height>
+         <width>564</width>
+         <height>537</height>
         </rect>
        </property>
        <attribute name="label">
@@ -288,10 +288,10 @@
       <widget class="QWidget" name="dataDetailPage">
        <property name="geometry">
         <rect>
-         <x>0</x>
+         <x>-18</x>
          <y>0</y>
-         <width>359</width>
-         <height>285</height>
+         <width>582</width>
+         <height>522</height>
         </rect>
        </property>
        <attribute name="label">
@@ -313,7 +313,7 @@
               <enum>QTabWidget::Triangular</enum>
              </property>
              <property name="currentIndex">
-              <number>0</number>
+              <number>1</number>
              </property>
              <widget class="QWidget" name="dataset1Tab">
               <attribute name="title">
@@ -358,7 +358,11 @@
                 </widget>
                </item>
                <item row="1" column="0">
-                <widget class="QTableView" name="dataframe2Table"/>
+                <widget class="QTableView" name="dataframe2Table">
+                 <property name="alternatingRowColors">
+                  <bool>true</bool>
+                 </property>
+                </widget>
                </item>
               </layout>
              </widget>
@@ -376,7 +380,7 @@
               <enum>QTabWidget::Triangular</enum>
              </property>
              <property name="currentIndex">
-              <number>1</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="setupTab">
               <property name="sizePolicy">
@@ -470,7 +474,11 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QTextEdit" name="inputParametersTextEdit"/>
+                      <widget class="QTableView" name="inputParametersTable">
+                       <property name="alternatingRowColors">
+                        <bool>false</bool>
+                       </property>
+                      </widget>
                      </item>
                     </layout>
                    </item>

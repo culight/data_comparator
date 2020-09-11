@@ -266,7 +266,7 @@ class ComparisonOutputTableModel(QAbstractTableModel):
 
 
 class LineEditDelegate(QItemDelegate):
-    def __init__(self, parent, setting):
+    def __init__(self, parent, setting=None):
         QItemDelegate.__init__(self, parent)
         self.setting = setting
 
@@ -343,6 +343,38 @@ class ConfigTableModel(QAbstractTableModel):
     def setData(self, index, value, role):
         if role == Qt.DisplayRole:
             self.data[index.row()][value[1]] = value[0]
+        
+        return True
+
+    def headerData(self, col, orientation, role):
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return self.header[col]
+        return None
+
+
+class InputParamsTableModel(QAbstractTableModel):
+    def __init__(self):
+        QAbstractTableModel.__init__(self)
+        self.header = ["Name", "Value"]
+        self.data = [{'':''}]
+
+    def flags(self, index):
+        return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
+
+    def rowCount(self, parent=QModelIndex()):
+        return len(self.data)
+
+    def columnCount(self, parent=QModelIndex()):
+        return 2
+
+    def data(self, index, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole:
+            return self.data[index.row()][index.column()]
+        return None
+    
+    def setData(self, index, value, role):
+        if role == Qt.DisplayRole:
+            self.data[index.row()][value[1]] = value 
         
         return True
 
@@ -429,6 +461,13 @@ class MainWindow(QMainWindow):
         self.configTable.setItemDelegateForColumn(3, LineEditDelegate(self, 'value'))
         self.configTable.setItemDelegateForColumn(4, LineEditDelegate(self, 'fields'))
         self.configTable.resizeColumnToContents(1)
+
+        #set up input parameter table
+        self.inputParamsTableModel = InputParamsTableModel()
+        self.inputParametersTable.setModel(self.inputParamsTableModel)
+        self.inputParametersTable.setItemDelegateForColumn(0, LineEditDelegate(self, 'name'))
+        self.inputParametersTable.setItemDelegateForColumn(1, LineEditDelegate(self, 'value'))
+        self.inputParametersTable.resizeColumnToContents(1)
         
         # set up column select
         self.dataset1Columns_model = None
