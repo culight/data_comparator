@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>807</width>
-    <height>629</height>
+    <width>631</width>
+    <height>558</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -34,8 +34,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>564</width>
-         <height>537</height>
+         <width>360</width>
+         <height>502</height>
         </rect>
        </property>
        <attribute name="label">
@@ -63,6 +63,13 @@
              <widget class="QPushButton" name="dataset2FileLoad">
               <property name="text">
                <string>Select File</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="inputParamsButton2">
+              <property name="text">
+               <string>Input Params</string>
               </property>
              </widget>
             </item>
@@ -244,6 +251,13 @@
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="inputParamsButton1">
+              <property name="text">
+               <string>Input Params</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QListView" name="dataset1Columns">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -290,8 +304,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>580</width>
-         <height>522</height>
+         <width>360</width>
+         <height>502</height>
         </rect>
        </property>
        <attribute name="label">
@@ -339,10 +353,10 @@
               </attribute>
               <layout class="QGridLayout" name="gridLayout">
                <item row="0" column="0">
-                <layout class="QHBoxLayout" name="comparisonSetupLayout">
-                 <item>
+                <layout class="QGridLayout" name="gridLayout_10">
+                 <item row="0" column="0">
                   <layout class="QVBoxLayout" name="setupInputsLayout">
-                   <item alignment="Qt::AlignHCenter">
+                   <item>
                     <widget class="QLabel" name="comparisonSetupLabel">
                      <property name="text">
                       <string>Comparison Setup:</string>
@@ -379,74 +393,33 @@
                      </property>
                     </widget>
                    </item>
-                   <item alignment="Qt::AlignHCenter">
-                    <widget class="QLabel" name="inputParamtersLabel">
-                     <property name="text">
-                      <string>Input Parameters:</string>
-                     </property>
-                    </widget>
-                   </item>
                    <item>
-                    <widget class="QTableView" name="inputParametersTable">
-                     <property name="sizeAdjustPolicy">
-                      <enum>QAbstractScrollArea::AdjustToContents</enum>
-                     </property>
-                     <property name="alternatingRowColors">
-                      <bool>false</bool>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_5">
-                     <item>
-                      <widget class="QPushButton" name="addParamButton">
-                       <property name="enabled">
-                        <bool>true</bool>
-                       </property>
+                    <layout class="QGridLayout" name="gridLayout_7">
+                     <item row="0" column="0" alignment="Qt::AlignHCenter">
+                      <widget class="QLabel" name="validationConfiguration">
                        <property name="text">
-                        <string>+</string>
+                        <string>Validation Configuration:</string>
                        </property>
                       </widget>
                      </item>
-                     <item>
-                      <widget class="QPushButton" name="removeParamButton">
-                       <property name="enabled">
-                        <bool>false</bool>
-                       </property>
+                     <item row="1" column="0">
+                      <widget class="QPushButton" name="openConfigButton">
                        <property name="text">
-                        <string>-</string>
+                        <string>Open Config File</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="2" column="0">
+                      <widget class="QTableView" name="configTable">
+                       <property name="sizeAdjustPolicy">
+                        <enum>QAbstractScrollArea::AdjustToContents</enum>
+                       </property>
+                       <property name="selectionMode">
+                        <enum>QAbstractItemView::SingleSelection</enum>
                        </property>
                       </widget>
                      </item>
                     </layout>
-                   </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <layout class="QVBoxLayout" name="setupConfigLayout">
-                   <item alignment="Qt::AlignHCenter">
-                    <widget class="QLabel" name="validationConfiguration">
-                     <property name="text">
-                      <string>Validation Configuration:</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QPushButton" name="openConfigButton">
-                     <property name="text">
-                      <string>Open Config File</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QTableView" name="configTable">
-                     <property name="sizeAdjustPolicy">
-                      <enum>QAbstractScrollArea::AdjustToContents</enum>
-                     </property>
-                     <property name="selectionMode">
-                      <enum>QAbstractItemView::SingleSelection</enum>
-                     </property>
-                    </widget>
                    </item>
                   </layout>
                  </item>
@@ -545,7 +518,7 @@
               <enum>QTabWidget::Triangular</enum>
              </property>
              <property name="currentIndex">
-              <number>1</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="dataset1Tab">
               <attribute name="title">
