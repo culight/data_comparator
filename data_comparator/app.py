@@ -1,4 +1,6 @@
 from logging import Logger
+
+from pandas.core.algorithms import value_counts
 from components.dataset import Dataset
 import sys
 import logging
@@ -121,8 +123,10 @@ class DataDetailDialog(QDialog):
         self.detailDialogTable.setRowCount(len(entries))
         self.detailDialogTable.setColumnCount(2)
         for index, (detail_name, detail_val) in enumerate(entries.items()):
-            self.detailDialogTable.setItem(index, 0, QTableWidgetItem(str(detail_name)))
-            self.detailDialogTable.setItem(index, 1, QTableWidgetItem(str(detail_val)))
+            self.detailDialogTable.setItem(
+                index, 0, QTableWidgetItem(str(detail_name)))
+            self.detailDialogTable.setItem(
+                index, 1, QTableWidgetItem(str(detail_val)))
         self.detailDialogTable.move(0, 0)
 
     def get_coltypes(self, dataset, entries):
@@ -175,6 +179,22 @@ class CompareButton(QPushButton):
         self.button = button
         self.parent = parent
         self.button.clicked.connect(self.compare)
+
+
+class AddInputParamButton(QPushButton):
+    def __init__(self, button, parent=None):
+        super(QPushButton, self).__init__()
+        self.button = button
+        self.parent = parent
+        self.button.clicked.connect(self.parent.add_input_parameter)
+
+
+class RemoveInputParamButton(QPushButton):
+    def __init__(self, button, parent=None):
+        super(QPushButton, self).__init__()
+        self.button = button
+        self.parent = parent
+        self.button.clicked.connect(self.parent.remove_input_parameter)
 
 
 class ResetButton(QPushButton):
@@ -282,7 +302,8 @@ class LineEditDelegate(QItemDelegate):
             try:
                 value.split(",")
             except AttributeError:
-                LOGGER.error("Must provide fields in the follwing form: field1, field2, ...")
+                LOGGER.error(
+                    "Must provide fields in the follwing form: field1, field2, ...")
                 return False
             return True
 
@@ -300,12 +321,12 @@ class ComboBoxDelegate(QItemDelegate):
     def __init__(self, parent):
         QItemDelegate.__init__(self, parent)
         self.choices = ['True', 'False']
-        
+
     def createEditor(self, parent, option, index):
         combobox = QComboBox(parent)
         combobox.addItems(self.choices)
         return combobox
-        
+
     def setEditorData(self, editor, index):
         value = index.data(Qt.DisplayRole)
         num = self.choices.index(value)
@@ -339,11 +360,11 @@ class ConfigTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             return list(self.data[index.row()].values())[index.column()]
         return None
-    
+
     def setData(self, index, value, role):
         if role == Qt.DisplayRole:
             self.data[index.row()][value[1]] = value[0]
-        
+
         return True
 
     def headerData(self, col, orientation, role):
@@ -353,10 +374,10 @@ class ConfigTableModel(QAbstractTableModel):
 
 
 class InputParamsTableModel(QAbstractTableModel):
-    def __init__(self):
+    def __init__(self, data=None):
         QAbstractTableModel.__init__(self)
         self.header = ["Name", "Value"]
-        self.data = [{'':''}]
+        self.data = [] if not data else data
 
     def flags(self, index):
         return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
@@ -369,13 +390,14 @@ class InputParamsTableModel(QAbstractTableModel):
 
     def data(self, index, role=Qt.DisplayRole):
         if role == Qt.DisplayRole:
+            print(self.data)
             return self.data[index.row()][index.column()]
         return None
-    
+
     def setData(self, index, value, role):
         if role == Qt.DisplayRole:
-            self.data[index.row()][value[1]] = value 
-        
+            self.data[index.row()][index.column()] = value[0]
+
         return True
 
     def headerData(self, col, orientation, role):
@@ -437,7 +459,9 @@ class MainWindow(QMainWindow):
         self.comparisons = []
         self.config_items = []
         self.config_names = []
-        self.isPopulated = {"colList1": False, "colList2": False, "compList": False, "compTable": False}
+        self.input_params = [['', '']]
+        self.isPopulated = {"colList1": False, "colList2": False,
+                            "compList": False, "compTable": False, "paramTable": False}
 
         uic.loadUi(MAIN_UI, self)
 
@@ -454,28 +478,47 @@ class MainWindow(QMainWindow):
 
         # set up config table
         self.config_items = self._read_json()
-        self.config_names = [i['name'].replace(' ', '_').lower() for i in self.config_items]
+        self.config_names = [i['name'].replace(
+            ' ', '_').lower() for i in self.config_items]
         self.configTableModel = ConfigTableModel(self.config_items)
         self.configTable.setModel(self.configTableModel)
         self.configTable.setItemDelegateForColumn(2, ComboBoxDelegate(self))
-        self.configTable.setItemDelegateForColumn(3, LineEditDelegate(self, 'value'))
-        self.configTable.setItemDelegateForColumn(4, LineEditDelegate(self, 'fields'))
+        self.configTable.setItemDelegateForColumn(
+            3, LineEditDelegate(self, 'value'))
+        self.configTable.setItemDelegateForColumn(
+            4, LineEditDelegate(self, 'fields'))
         self.configTable.resizeColumnToContents(1)
 
-        #set up input parameter table
-        self.inputParamsTableModel = InputParamsTableModel()
+        # set up input parameter table
+        self.inputParamsTableModel = InputParamsTableModel(self.input_params)
         self.inputParametersTable.setModel(self.inputParamsTableModel)
-        self.inputParametersTable.setItemDelegateForColumn(0, LineEditDelegate(self, 'name'))
-        self.inputParametersTable.setItemDelegateForColumn(1, LineEditDelegate(self, 'value'))
+        self.inputParametersTable.setItemDelegateForColumn(
+            0, LineEditDelegate(self, 'name'))
+        self.inputParametersTable.setItemDelegateForColumn(
+            1, LineEditDelegate(self, 'value'))
         self.inputParametersTable.resizeColumnToContents(1)
-        
+        self.inputParametersTable.horizontalHeader().setStretchLastSection(True)
+
+        # set input paramter buttons
+        self.add_one_button = AddInputParamButton(self.addParamButton, self)
+        self.add_all_button = RemoveInputParamButton(
+            self.removeParamButton, self)
+        self.remove_one_button = ColumnSelectButton(
+            self.removeOneButton, "remove_one", self
+        )
+        self.remove_all_button = ColumnSelectButton(
+            self.removeAllButton, "remove_all", self
+        )
+
         # set up column select
         self.dataset1Columns_model = None
         self.dataset2Columns_model = None
 
         # set column buttons
-        self.add_one_button = ColumnSelectButton(self.addOneButton, "add_one", self)
-        self.add_all_button = ColumnSelectButton(self.addAllButton, "add_all", self)
+        self.add_one_button = ColumnSelectButton(
+            self.addOneButton, "add_one", self)
+        self.add_all_button = ColumnSelectButton(
+            self.addAllButton, "add_all", self)
         self.remove_one_button = ColumnSelectButton(
             self.removeOneButton, "remove_one", self
         )
@@ -546,7 +589,7 @@ class MainWindow(QMainWindow):
 
     def _write_json(self, validation_data):
         assert validation_data, LOGGER.error("Validation data not found")
-        
+
         config_items = {
             'type':
             {
@@ -564,10 +607,10 @@ class MainWindow(QMainWindow):
                 'value': entry['value'],
                 'fields': entry['fields']
             }
-        
+
         with open(VALID_FILE, "w") as write_file:
             json.dump(config_items, write_file)
-        
+
         return config_items
 
     def _read_json(self):
@@ -589,7 +632,7 @@ class MainWindow(QMainWindow):
                 config_dict["value"] = val_settings["value"]
                 config_dict["fields"] = val_settings["fields"]
                 config_items.append(config_dict)
-        
+
         return config_items
 
     def create_plots(self, data, is_profile=False):
@@ -613,7 +656,8 @@ class MainWindow(QMainWindow):
 
                 plot_model = Plot(self)
                 try:
-                    comp_trimmed = data.loc[:, data.columns != "diff_col"].transpose()
+                    comp_trimmed = data.loc[:,
+                                            data.columns != "diff_col"].transpose()
                     plot_model.ax.axes.bar(
                         x=list(comp_trimmed.index),
                         height=comp_trimmed[row_name].tolist(),
@@ -630,7 +674,8 @@ class MainWindow(QMainWindow):
                     plot_model.setSizePolicy(
                         QSizePolicy.Expanding, QSizePolicy.Expanding
                     )
-                    self.plotsGridLayout.addWidget(plot_model, row_num, column_num)
+                    self.plotsGridLayout.addWidget(
+                        plot_model, row_num, column_num)
                 except Exception as e:
                     LOGGER.error("Encountered an error while adding plot")
                     LOGGER.error(e)
@@ -665,8 +710,29 @@ class MainWindow(QMainWindow):
 
         self.comparisonsTabLayout.setCurrentIndex(1)
 
+    def add_input_parameter(self):
+        self.input_params.append(
+            ['', ''])
+        self.inputParametersTable.model().layoutChanged.emit()
+        self.removeParamButton.setEnabled(True)
+
+    def remove_input_parameter(self):
+        if not self.inputParametersTable.selectionModel().hasSelection():
+            LOGGER.error("Must select a row/rows to remove")
+            return
+
+        comp_indices = self.inputParametersTable.selectionModel().selectedRows()
+        print(comp_indices)
+
+        for index in sorted(comp_indices):
+            del self.input_params[index.row()]
+        self.inputParametersTable.model().layoutChanged.emit()
+
+        if self.inputParamsTableModel.rowCount() < 1:
+            self.removeParamButton.setEnabled(False)
+
     def compare(self):
-        
+
         # start with clean slate
         self.reset()
 
@@ -710,9 +776,10 @@ class MainWindow(QMainWindow):
 
         self._clear_plots()
         if create_plots_checked and not comp_df.empty:
-            # remove validation fields 
+            # remove validation fields
             if perform_validations:
-                cols_to_drop = [col for col in list(comp_df.index) if col in self.config_names]
+                cols_to_drop = [col for col in list(
+                    comp_df.index) if col in self.config_names]
                 if cols_to_drop:
                     comp_df = comp_df.drop(cols_to_drop)
             self.create_plots(comp_df)
@@ -734,7 +801,8 @@ class MainWindow(QMainWindow):
         self.dataset2Columns.clearSelection()
 
         if len(colList1_indexes) < 1 or len(colList2_indexes) < 1:
-            LOGGER.error("Two columns must be selected in order to create a comparison")
+            LOGGER.error(
+                "Two columns must be selected in order to create a comparison")
             return
 
         colList1_index = colList1_indexes[0]
@@ -791,7 +859,8 @@ class MainWindow(QMainWindow):
             col1 = col
             col2 = col
             if DATASET1[col1].data_type != DATASET2[col2].data_type:
-                LOGGER.error("{} is of type and {} is of type. Could not be compare".format(col1, col2))
+                LOGGER.error(
+                    "{} is of type and {} is of type. Could not be compare".format(col1, col2))
                 continue
             comp_name = "{}-{}".format(col1, col2)
             if not self._is_novel_comparison(comp_name):
@@ -865,10 +934,12 @@ class MainWindow(QMainWindow):
             self.dataset1Columns_model = DatasetColumnsListModel(DATASET1)
             self.dataset1Columns.setModel(self.dataset1Columns_model)
 
-            self.isPopulated["colList1"] = True if len(DATASET1.columns) > 0 else False
+            self.isPopulated["colList1"] = True if len(
+                DATASET1.columns) > 0 else False
 
             # set dataframe table
-            self.dataframe1Table_model = DataframeTableModel(DATASET1.dataframe)
+            self.dataframe1Table_model = DataframeTableModel(
+                DATASET1.dataframe)
             self.dataframe1Table.setModel(self.dataframe1Table_model)
             self.ds_details_button1 = DatasetDetailsButton(
                 self.datasetDetails1Button, dataset
@@ -880,10 +951,12 @@ class MainWindow(QMainWindow):
             self.dataset2Columns_model = DatasetColumnsListModel(DATASET2)
             self.dataset2Columns.setModel(self.dataset2Columns_model)
 
-            self.isPopulated["colList2"] = True if len(DATASET2.columns) > 0 else False
+            self.isPopulated["colList2"] = True if len(
+                DATASET2.columns) > 0 else False
 
             # set dataframe table
-            self.dataframe2Table_model = DataframeTableModel(DATASET2.dataframe)
+            self.dataframe2Table_model = DataframeTableModel(
+                DATASET2.dataframe)
             self.dataframe2Table.setModel(self.dataframe2Table_model)
             self.ds_details_button2 = DatasetDetailsButton(
                 self.datasetDetails2Button, dataset
