@@ -34,8 +34,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>360</width>
-         <height>502</height>
+         <width>476</width>
+         <height>466</height>
         </rect>
        </property>
        <attribute name="label">
@@ -304,8 +304,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>360</width>
-         <height>502</height>
+         <width>476</width>
+         <height>466</height>
         </rect>
        </property>
        <attribute name="label">
@@ -412,7 +412,7 @@
                      <item row="2" column="0">
                       <widget class="QTableView" name="configTable">
                        <property name="sizeAdjustPolicy">
-                        <enum>QAbstractScrollArea::AdjustToContents</enum>
+                        <enum>QAbstractScrollArea::AdjustIgnored</enum>
                        </property>
                        <property name="selectionMode">
                         <enum>QAbstractItemView::SingleSelection</enum>

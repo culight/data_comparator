@@ -1,3 +1,11 @@
+"""
+### CODE OWNERS: Demerrick Moton
+
+### OBJECTIVE:
+    GUI Application for Data Comparator
+
+### DEVELOPER NOTES:
+"""
 from logging import Logger
 
 from pandas.core.algorithms import value_counts
@@ -24,6 +32,7 @@ import data_comparator as dc
 
 MAIN_UI = "ui/data_comparator.ui"
 DETAIL_DLG = "ui/data_detail_dialog.ui"
+INPUT_PARAMS_DLG = "ui/input_parameters_dialog.ui"
 VALID_FILE = "components/validations_config.json"
 ACCEPTED_INPUT_FORMATS = ["sas7bdat", "csv", "parquet", "json"]
 NON_PLOT_ROWS = ["ds_name", "name", "data_type"]
@@ -51,8 +60,35 @@ class SelectFileButton(QPushButton):
         self.btn.clicked.connect(self.getFile)
         self.dataset = None
 
+    def set_input_params(self):
+        self.input_params = {}
+        value_subs = {
+            'none': None,
+            'null': None,
+            "true": True,
+            "false": False
+        }
+        settings = QSettings('myorg', 'myapp' + str(self.ds_num))
+        param_values = settings.value('params', [])
+        if len(param_values) > 0:
+            for v in param_values:
+                key = v[0].lower().replace(' ', '')
+                value = v[1].lower().replace(' ', '')
+
+                if not key:
+                    # ignore entries with empty keys
+                    continue
+
+                if value in value_subs.keys():
+                    value = value_subs[value]
+                if (',' in value) and (len(value) > 1):
+                    value = value.split(',')
+
+                self.input_params.update({key: value})
+
     def getFile(self):
-        print("clicked")
+        self.set_input_params()
+
         file_diag = QFileDialog()
         fname = file_diag.getOpenFileName(
             self,
@@ -80,8 +116,14 @@ class SelectFileButton(QPushButton):
         ), "Select file type was {}, but must be in format {}".format(
             ",".join([" *." + frmt for frmt in ACCEPTED_INPUT_FORMATS])
         )
-
-        self.dataset = dc.load_dataset(data_path, dataset_name)
+        try:
+            self.dataset = dc.load_dataset(
+                data_source=data_path,
+                data_source_name=dataset_name,
+                **self.input_params
+            )
+        except (TypeError, AttributeError, ValueError) as e:
+            LOGGER.error(str(e))
 
         self.onDatasetLoaded()
 
@@ -161,6 +203,89 @@ class DatasetDetailsButton(QPushButton):
         if self.dataset != None:
             detail_dlg = DataDetailDialog(self.dataset)
             detail_dlg.exec_()
+
+
+class InputParametersDialog(QDialog):
+    def __init__(self, num):
+        super(InputParametersDialog, self).__init__()
+        uic.loadUi(INPUT_PARAMS_DLG, self)
+
+        # set the initial value
+        self.input_params = [['', '']]
+        self.num = num
+        self.restoreSettings()
+
+        # set up the parameters table
+        self.setup_table()
+
+        # set input parameter buttons
+        self.add_one_button = AddInputParamButton(self.addParamButton, self)
+        self.add_all_button = RemoveInputParamButton(
+            self.removeParamButton, self)
+
+    def setup_table(self):
+        self.inputParamsTableModel = InputParamsTableModel(self.input_params)
+        self.inputParametersTable.setModel(self.inputParamsTableModel)
+        nameLineEdit = LineEditDelegate(self, 'name')
+        nameLineEdit.cellEditingStarted.connect(self.getUpdatedData)
+        self.inputParametersTable.setItemDelegateForColumn(
+            0, nameLineEdit)
+        valueLineEdit = LineEditDelegate(self, 'value')
+        valueLineEdit.cellEditingStarted.connect(self.getUpdatedData)
+        self.inputParametersTable.setItemDelegateForColumn(
+            1, valueLineEdit)
+        self.inputParametersTable.resizeColumnToContents(1)
+        self.inputParametersTable.horizontalHeader().setStretchLastSection(True)
+
+    def add_input_parameter(self):
+        # don't create new rows until values are added
+        self.input_params.append(
+            ['', ''])
+        self.inputParametersTable.model().layoutChanged.emit()
+
+    def remove_input_parameter(self):
+        if not self.inputParametersTable.selectionModel().hasSelection():
+            LOGGER.error("Must select a row/rows to remove")
+            return
+
+        comp_indices = self.inputParametersTable.selectionModel().selectedRows()
+
+        for index in sorted(comp_indices):
+            if len(self.input_params) == 1:
+                self.input_params = [['', '']]
+                self.setup_table()
+                return
+            else:
+                del self.input_params[index.row()]
+                self.inputParametersTable.model().layoutChanged.emit()
+
+    def getUpdatedData(self, row, col, value):
+        self.input_params[row][col] = value
+        self.saveSettings()
+
+    def saveSettings(self):
+        settings = QSettings('myorg', 'myapp' + str(self.num))
+        settings.setValue('params', self.input_params)
+
+    def restoreSettings(self):
+        settings = QSettings('myorg', 'myapp' + str(self.num))
+        self.input_params = settings.value('params', self.input_params)
+
+    def closeEvent(self, event):
+        self.saveSettings()
+        super(InputParametersDialog, self).closeEvent(event)
+
+
+class InputParametersButton(QPushButton):
+    def __init__(self, button, num):
+        super(QPushButton, self).__init__()
+        self.num = num
+        self.button = button
+        self.button.clicked.connect(self.onClicked)
+
+    def onClicked(self):
+        detail_dlg = InputParametersDialog(self.num)
+        detail_dlg.exec_()
 
 
 class OpenConfigButton(QPushButton):
@@ -286,11 +411,14 @@ class ComparisonOutputTableModel(QAbstractTableModel):
 
 
 class LineEditDelegate(QItemDelegate):
+    cellEditingStarted = pyqtSignal(int, int, str)
+
     def __init__(self, parent, setting=None):
         QItemDelegate.__init__(self, parent)
         self.setting = setting
 
     def _is_valid(self, value):
+        # for config table
         if self.setting == 'value':
             try:
                 float(value)
@@ -313,8 +441,10 @@ class LineEditDelegate(QItemDelegate):
 
     def setModelData(self, editor, model, index):
         value = editor.text()
-        value_pair = (value, self.setting)
-        model.setData(index, value_pair, Qt.DisplayRole)
+        if value:
+            value_pair = (value, self.setting)
+            self.cellEditingStarted.emit(index.row(), index.column(), value)
+            model.setData(index, value_pair, Qt.DisplayRole)
 
 
 class ComboBoxDelegate(QItemDelegate):
@@ -390,14 +520,12 @@ class InputParamsTableModel(QAbstractTableModel):
 
     def data(self, index, role=Qt.DisplayRole):
         if role == Qt.DisplayRole:
-            print(self.data)
             return self.data[index.row()][index.column()]
         return None
 
     def setData(self, index, value, role):
-        if role == Qt.DisplayRole:
+        if role == Qt.EditRole or role == Qt.DisplayRole:
             self.data[index.row()][index.column()] = value[0]
-
         return True
 
     def headerData(self, col, orientation, role):
@@ -459,11 +587,12 @@ class MainWindow(QMainWindow):
         self.comparisons = []
         self.config_items = []
         self.config_names = []
-        self.input_params = [['', '']]
         self.isPopulated = {"colList1": False, "colList2": False,
-                            "compList": False, "compTable": False, "paramTable": False}
+                            "compList": False, "compTable": False}
 
         uic.loadUi(MAIN_UI, self)
+        QSettings('myorg', 'myapp1').clear()
+        QSettings('myorg', 'myapp2').clear()
 
         # set up logger
         self.setup_logger()
@@ -490,27 +619,18 @@ class MainWindow(QMainWindow):
         self.configTable.resizeColumnToContents(1)
 
         # set up input parameter table
-        self.inputParamsTableModel = InputParamsTableModel(self.input_params)
-        self.inputParametersTable.setModel(self.inputParamsTableModel)
-        self.inputParametersTable.setItemDelegateForColumn(
-            0, LineEditDelegate(self, 'name'))
-        self.inputParametersTable.setItemDelegateForColumn(
-            1, LineEditDelegate(self, 'value'))
-        self.inputParametersTable.resizeColumnToContents(1)
-        self.inputParametersTable.horizontalHeader().setStretchLastSection(True)
+        self.ip_button1 = InputParametersButton(
+            self.inputParamsButton1, 1)
+        self.ip_button2 = InputParametersButton(
+            self.inputParamsButton2, 2)
 
-        # set input paramter buttons
-        self.add_one_button = AddInputParamButton(self.addParamButton, self)
-        self.add_all_button = RemoveInputParamButton(
-            self.removeParamButton, self)
+        # set up column select
         self.remove_one_button = ColumnSelectButton(
             self.removeOneButton, "remove_one", self
         )
         self.remove_all_button = ColumnSelectButton(
             self.removeAllButton, "remove_all", self
         )
-
-        # set up column select
         self.dataset1Columns_model = None
         self.dataset2Columns_model = None
 
@@ -709,27 +829,6 @@ class MainWindow(QMainWindow):
             self.create_plots(ds.dataframe[col], is_profile=True)
 
         self.comparisonsTabLayout.setCurrentIndex(1)
-
-    def add_input_parameter(self):
-        self.input_params.append(
-            ['', ''])
-        self.inputParametersTable.model().layoutChanged.emit()
-        self.removeParamButton.setEnabled(True)
-
-    def remove_input_parameter(self):
-        if not self.inputParametersTable.selectionModel().hasSelection():
-            LOGGER.error("Must select a row/rows to remove")
-            return
-
-        comp_indices = self.inputParametersTable.selectionModel().selectedRows()
-        print(comp_indices)
-
-        for index in sorted(comp_indices):
-            del self.input_params[index.row()]
-        self.inputParametersTable.model().layoutChanged.emit()
-
-        if self.inputParamsTableModel.rowCount() < 1:
-            self.removeParamButton.setEnabled(False)
 
     def compare(self):
 
@@ -930,6 +1029,10 @@ class MainWindow(QMainWindow):
         if ds_num == 1:
             DATASET1 = dataset
 
+            if DATASET1 == None:
+                LOGGER.error("Dataset 1 was not sucessfully loaded")
+                return
+
             # set columns
             self.dataset1Columns_model = DatasetColumnsListModel(DATASET1)
             self.dataset1Columns.setModel(self.dataset1Columns_model)
@@ -944,8 +1047,13 @@ class MainWindow(QMainWindow):
             self.ds_details_button1 = DatasetDetailsButton(
                 self.datasetDetails1Button, dataset
             )
+
         if ds_num == 2:
             DATASET2 = dataset
+
+            if DATASET2 == None:
+                LOGGER.error("Dataset 2 was not sucessfully loaded")
+                return
 
             # set columns
             self.dataset2Columns_model = DatasetColumnsListModel(DATASET2)
