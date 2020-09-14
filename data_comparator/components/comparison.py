@@ -2,22 +2,17 @@
 ### CODE OWNERS: Demerrick Moton
 
 ### OBJECTIVE:
-    data model for Comparison object
+    Data model for Comparison object
 
 ### DEVELOPER NOTES:
 """
 import logging
-import itertools
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
 from components.dataset import Dataset, Column
-
-
-_BAR_FIELDS = ["count", "missing", "unique"]
-_BOXPLOT_FIELDS = ["min", "max", "std", "mean", "zeros"]
 
 logging.basicConfig(format="%(asctime)s - %(message)s")
 LOGGER = logging.getLogger(__name__)
@@ -42,7 +37,8 @@ class Comparison:
                     col1.name, col1.data_type, col2.name, col2.data_type
                 )
             )
-        LOGGER.info("\nComparing '{}' and '{}'... ".format(col1.name, col2.name))
+        LOGGER.info("Comparing '{}' and '{}'... ".format(
+            col1.name, col2.name))
 
         self.col1 = col1
         self.col2 = col2
@@ -78,12 +74,15 @@ class Comparison:
                 self.col1 and self.col2
             )
         except Exception as err:
-            LOGGER.exception("Two columns must be provided to create diff column")
+            LOGGER.exception(
+                "Two columns must be provided to create diff column")
             raise err
 
         if checks_added:
-            measures1 = {**self.col1.get_summary(), **self.col1.perform_check()}
-            measures2 = {**self.col2.get_summary(), **self.col2.perform_check()}
+            measures1 = {**self.col1.get_summary(), **
+                         self.col1.perform_check()}
+            measures2 = {**self.col2.get_summary(), **
+                         self.col2.perform_check()}
             keys = list(self.col1.get_summary().keys()) + list(
                 self.col1.perform_check().keys()
             )
@@ -103,27 +102,3 @@ class Comparison:
             diff_list.append(diff)
 
         return diff_list
-
-    def plot(self):
-        boxplot_created = False
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        plt.ion()
-
-        fig.show()
-        fig.canvas.draw()
-
-        for i, measure in enumerate(self.dataframe.index):
-            ax.clear()
-            if measure in _BAR_FIELDS:
-                ax.plot.bar(self.dataframe.loc[measure])
-            elif measure in _BOXPLOT_FIELDS and not boxplot_created:
-                col1_name = self.name.split("-")[0]
-                col2_name = self.name.split("-")[1]
-                _df = pd.DataFrame(
-                    {col1_name: self.col1.data, col2_name: self.col2.data}
-                )
-                _df.boxplot(ax=axes[1, 1])
-                boxplot_created = True
-            fig.canvas.show()
-
