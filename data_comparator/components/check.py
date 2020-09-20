@@ -2,7 +2,7 @@
 ### CODE OWNERS: Demerrick Moton
 
 ### OBJECTIVE:
-    data model for data file object
+    Module for the data type checks
 
 ### DEVELOPER NOTES:
 """
@@ -22,7 +22,8 @@ def check_string_column(column, validations, row_limit=None):
 
     string_checks = {}
     for case, settings in validations.items():
-        doCheck = (len(settings["fields"]) == 0) or ("name" in settings["fields"])
+        doCheck = (len(settings["fields"]) == 0) or (
+            "name" in settings["fields"])
         if settings["enabled"] and doCheck:
             string_checks[case] = ""
 
@@ -109,7 +110,8 @@ def check_numeric_column(column, validations):
 
     numeric_checks = {}
     for case, settings in validations.items():
-        doCheck = (len(settings["fields"]) == 0) or ("name" in settings["fields"])
+        doCheck = (len(settings["fields"]) == 0) or (
+            "name" in settings["fields"])
         if settings["enabled"] and doCheck:
             numeric_checks[case] = ""
 
@@ -119,7 +121,8 @@ def check_numeric_column(column, validations):
             numeric_checks["susp_skewness"] = str(col_skew)
 
     if "pot_outliers" in numeric_checks:
-        col_zscore = (column.data - column.data.mean()) / column.data.std(ddof=0)
+        col_zscore = (column.data - column.data.mean()) / \
+            column.data.std(ddof=0)
         num_pot_outliers = len(np.where(np.abs(col_zscore) > 3)[0])
         if num_pot_outliers > 0:
             numeric_checks["pot_outliers"] = str(num_pot_outliers)
@@ -131,8 +134,9 @@ def check_numeric_column(column, validations):
 
     if "value_threshold_upper" in numeric_checks:
         value = None
-        try:      
-            value = df[df[column.name] > float(validations["value_threshold_upper"]["value"])].iloc[0][0]
+        try:
+            value = df[df[column.name] > float(
+                validations["value_threshold_upper"]["value"])].iloc[0][0]
         except IndexError:
             pass  # add logger
         if value:
@@ -141,7 +145,8 @@ def check_numeric_column(column, validations):
     if "value_threshold_lower" in numeric_checks:
         value = None
         try:
-            value = df[df[column.name] < float(validations["value_threshold_lower"]["value"])].iloc[0][0]
+            value = df[df[column.name] < float(
+                validations["value_threshold_lower"]["value"])].iloc[0][0]
         except IndexError:
             pass  # add logger
         if value:
@@ -157,7 +162,8 @@ def check_temporal_column(column, validations):
 
     temporal_checks = {}
     for case, settings in validations.items():
-        doCheck = (len(settings["fields"]) == 0) or ("name" in settings["fields"])
+        doCheck = (len(settings["fields"]) == 0) or (
+            "name" in settings["fields"])
         if settings["enabled"] and doCheck:
             temporal_checks[case] = ""
 
@@ -183,7 +189,8 @@ def check_temporal_column(column, validations):
 def check_boolean_column(column, validations):
     boolean_checks = {}
     for case, settings in validations.items():
-        doCheck = (len(settings["fields"]) == 0) or ("name" in settings["fields"])
+        doCheck = (len(settings["fields"]) == 0) or (
+            "name" in settings["fields"])
         if settings["enabled"] and doCheck:
             boolean_checks[case] = ""
 

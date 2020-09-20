@@ -1,4 +1,14 @@
+"""
+### CODE OWNERS: Demerrick Moton
+
+### OBJECTIVE:
+    GUI Application for Data Comparator
+
+### DEVELOPER NOTES:
+"""
 from logging import Logger
+
+from pandas.core.algorithms import value_counts
 from components.dataset import Dataset
 import sys
 import logging
@@ -18,10 +28,13 @@ from matplotlib.backends.backend_qt5agg import (
     NavigationToolbar2QT as NavigationToolbar,
 )
 
+from view_models import *
+
 import data_comparator as dc
 
 MAIN_UI = "ui/data_comparator.ui"
 DETAIL_DLG = "ui/data_detail_dialog.ui"
+INPUT_PARAMS_DLG = "ui/input_parameters_dialog.ui"
 VALID_FILE = "components/validations_config.json"
 ACCEPTED_INPUT_FORMATS = ["sas7bdat", "csv", "parquet", "json"]
 NON_PLOT_ROWS = ["ds_name", "name", "data_type"]
@@ -40,374 +53,18 @@ LOGGER = logging.getLogger(__name__)
 # =============================================================================
 
 
-class SelectFileButton(QPushButton):
-    def __init__(self, button, ds_num, parent):
-        super(SelectFileButton, self).__init__()
-        self.parent = parent
-        self.ds_num = ds_num
-        self.btn = button
-        self.btn.clicked.connect(self.getFile)
-        self.dataset = None
-
-    def getFile(self):
-        print("clicked")
-        file_diag = QFileDialog()
-        fname = file_diag.getOpenFileName(
-            self,
-            "Open file",
-            "c:\\",
-            "Data Files ({}, *)".format(
-                ",".join(["*." + frmt for frmt in ACCEPTED_INPUT_FORMATS])
-            ),
-        )[0]
-
-        if not fname:
-            return
-
-        data_path = Path(fname)
-
-        if (".part-" in fname) or ("._SUCCESS" in fname):
-            data_path = data_path.parent
-
-        file_type = data_path.name.split(".")[-1]
-        ds_postfix = "_ds" + str(self.ds_num)
-        dataset_name = data_path.stem + ds_postfix
-
-        assert (
-            file_type in ACCEPTED_INPUT_FORMATS
-        ), "Select file type was {}, but must be in format {}".format(
-            ",".join([" *." + frmt for frmt in ACCEPTED_INPUT_FORMATS])
-        )
-
-        self.dataset = dc.load_dataset(data_path, dataset_name)
-
-        self.onDatasetLoaded()
-
-    def onDatasetLoaded(self):
-        self.parent.render_data(self.dataset, self.ds_num)
-
-
-class ColumnSelectButton(QPushButton):
-    def __init__(self, button, mode, parent=None):
-        super(QPushButton, self).__init__()
-        self.button = button
-        self.mode = mode
-        self.button.clicked.connect(self.onClicked)
-        self.parent = parent
-
-    def onClicked(self):
-        if self.mode == "add_one":
-            self.parent.add_comparison()
-        if self.mode == "add_all":
-            self.parent.add_comparisons()
-        if self.mode == "remove_one":
-            self.parent.remove_comparison()
-        if self.mode == "remove_all":
-            self.parent.clear_comparisons()
-
-
-class DataDetailDialog(QDialog):
-    def __init__(self, dataset):
-        super(DataDetailDialog, self).__init__()
-        uic.loadUi(DETAIL_DLG, self)
-
-        self.detailDialogTable.horizontalHeader().setSectionResizeMode(
-            QHeaderView.Interactive
-        )
-
-        entries = dataset.get_summary()
-        entries.pop("columns")
-        entries = self.get_coltypes(dataset, entries)
-        self.detailDialogTable.setRowCount(len(entries))
-        self.detailDialogTable.setColumnCount(2)
-        for index, (detail_name, detail_val) in enumerate(entries.items()):
-            self.detailDialogTable.setItem(index, 0, QTableWidgetItem(str(detail_name)))
-            self.detailDialogTable.setItem(index, 1, QTableWidgetItem(str(detail_val)))
-        self.detailDialogTable.move(0, 0)
-
-    def get_coltypes(self, dataset, entries):
-        col_type_template = {
-            "string_columns": ["object", "str", "o"],
-            "numeric_columns": ["number", "n", "int"],
-            "time_columns": ["time", "datetime", "date", "t"],
-            "boolean_columns": ["bool", "b"],
-        }
-        for col_type, type_names in col_type_template.items():
-            for type_name in type_names:
-                columns = dataset.get_cols_oftype(type_name).values()
-                if len(columns) == 0:
-                    continue
-                ds_names = [col.name for col in columns]
-                if col_type in entries:
-                    entries[col_type].append(ds_names)
-                else:
-                    entries[col_type] = ds_names
-
-        return entries
-
-
-class DatasetDetailsButton(QPushButton):
-    def __init__(self, button, dataset=None):
-        super(QPushButton, self).__init__()
-        self.dataset = dataset
-        self.button = button
-        self.button.clicked.connect(self.onClicked)
-
-    def onClicked(self):
-        if self.dataset != None:
-            detail_dlg = DataDetailDialog(self.dataset)
-            detail_dlg.exec_()
-
-
-class OpenConfigButton(QPushButton):
-    def __init__(self, button):
-        super(QPushButton, self).__init__()
-
-
-class ValidationButton(QPushButton):
-    def __init__(self, button):
-        super(QPushButton, self).__init__()
-
-
-class CompareButton(QPushButton):
-    def __init__(self, button, parent=None):
-        super(QPushButton, self).__init__()
-        self.button = button
-        self.parent = parent
-        self.button.clicked.connect(self.compare)
-
-
-class ResetButton(QPushButton):
-    def __init__(self, button):
-        super(QPushButton, self).__init__()
-
-
-class DataframeTableModel(QAbstractTableModel):
-    def __init__(self, df):
-        QAbstractTableModel.__init__(self)
-        self.df = df.head(300)
-
-    def rowCount(self, parent=None):
-        return self.df.shape[0]
-
-    def columnCount(self, parent=None):
-        return self.df.shape[1]
-
-    def data(self, index, role=Qt.DisplayRole):
-        if index.isValid():
-            if role == Qt.DisplayRole:
-                return str(self.df.iloc[index.row(), index.column()])
-        return None
-
-    def headerData(self, col, orientation, role):
-        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            return self.df.columns[col]
-        return None
-
-
-class ComparisonTableModel(QAbstractTableModel):
-    def __init__(self, comparisons):
-        QAbstractTableModel.__init__(self)
-        self.header = ["Name", "Dataset A", "Dataset B"]
-        self.rows = comparisons
-
-    def rowCount(self, parent=None):
-        return len(self.rows)
-
-    def columnCount(self, parent=None):
-        return 3
-
-    def data(self, index, role=Qt.DisplayRole):
-        if index.isValid():
-            if role == Qt.DisplayRole:
-                return QVariant(self.rows[index.row()][index.column()])
-        return None
-
-    def headerData(self, col, orientation, role):
-        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            return QVariant(self.header[col])
-        return None
-
-
-class ComparisonOutputTableModel(QAbstractTableModel):
-    def __init__(self, df):
-        QAbstractTableModel.__init__(self)
-        self.df = df
-        self.vertical_header = list(df.index)
-
-    def rowCount(self, parent=None):
-        return self.df.shape[0]
-
-    def columnCount(self, parent=None):
-        return self.df.shape[1]
-
-    def data(self, index, role=Qt.DisplayRole):
-        if index.isValid():
-            data = str(self.df.iloc[index.row(), index.column()])
-            if role == Qt.DisplayRole:
-                return data
-            if role == Qt.BackgroundRole and (index.column() == 2):
-                if data in ["same", "NaT"]:
-                    return QBrush(Qt.green)
-                else:
-                    return QBrush(Qt.red)
-
-        return None
-
-    def headerData(self, col, orientation, role):
-        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            return self.df.columns[col]
-        if orientation == Qt.Vertical and role == Qt.DisplayRole:
-            return self.vertical_header[col]
-        return None
-
-    def clear(self):
-        self.df = self.df.iloc[0:0]
-
-
-class LineEditDelegate(QItemDelegate):
-    def __init__(self, parent, setting):
-        QItemDelegate.__init__(self, parent)
-        self.setting = setting
-
-    def _is_valid(self, value):
-        if self.setting == 'value':
-            try:
-                float(value)
-            except ValueError:
-                LOGGER.error("Value must be numeric")
-                return False
-            return True
-        elif self.setting == 'field':
-            try:
-                value.split(",")
-            except AttributeError:
-                LOGGER.error("Must provide fields in the follwing form: field1, field2, ...")
-                return False
-            return True
-
-    def createEditor(self, parent, option, index):
-        lineedit = QLineEdit(parent)
-        return lineedit
-
-    def setModelData(self, editor, model, index):
-        value = editor.text()
-        value_pair = (value, self.setting)
-        model.setData(index, value_pair, Qt.DisplayRole)
-
-
-class ComboBoxDelegate(QItemDelegate):
-    def __init__(self, parent):
-        QItemDelegate.__init__(self, parent)
-        self.choices = ['True', 'False']
-        
-    def createEditor(self, parent, option, index):
-        combobox = QComboBox(parent)
-        combobox.addItems(self.choices)
-        return combobox
-        
-    def setEditorData(self, editor, index):
-        value = index.data(Qt.DisplayRole)
-        num = self.choices.index(value)
-        editor.setCurrentIndex(num)
-
-    def setModelData(self, editor, model, index):
-        value = editor.currentText()
-        value_pair = (value, 'enabled')
-        model.setData(index, value_pair, Qt.DisplayRole)
-
-
-class ConfigTableModel(QAbstractTableModel):
-    def __init__(self, data):
-        QAbstractTableModel.__init__(self)
-        self.header = ["Name", "Type", "Enabled", "Value", "Fields"]
-        self.data = data
-
-    def flags(self, index):
-        if index.column() in [2, 3, 4]:
-            return Qt.ItemIsEnabled | Qt.ItemIsSelectable | Qt.ItemIsEditable
-        else:
-            return Qt.ItemIsEnabled
-
-    def rowCount(self, parent=QModelIndex()):
-        return len(self.data)
-
-    def columnCount(self, parent=QModelIndex()):
-        return 5
-
-    def data(self, index, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole:
-            return list(self.data[index.row()].values())[index.column()]
-        return None
-    
-    def setData(self, index, value, role):
-        if role == Qt.DisplayRole:
-            self.data[index.row()][value[1]] = value[0]
-        
-        return True
-
-    def headerData(self, col, orientation, role):
-        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            return self.header[col]
-        return None
-
-
-class DatasetColumnsListModel(QAbstractListModel):
-    def __init__(self, dataset=None, parent=None):
-        super(DatasetColumnsListModel, self).__init__(parent)
-        self.cols = ["====="]
-        if dataset != None:
-            self.cols = self.cols + list(dataset.columns.keys())
-
-    def data(self, index, role=Qt.DisplayRole):
-        if role == Qt.DisplayRole:
-            col_name = self.cols[index.row()]
-            return col_name
-
-    def rowCount(self, parent=QModelIndex()):
-        return len(self.cols)
-
-
-class ComparisonsComboBox(QComboBox):
-    def __init__(self, comparisons, parent=None):
-        super(ComparisonsComboBox, self).__init__(parent)
-        self.comparisons = comparisons
-
-
-class Plot(FigureCanvasQTAgg):
-    def __init__(self, parent=None):
-        fig = Figure(figsize=(0.5, 0.5), dpi=42)
-        fig.clear()
-        self.ax = fig.add_subplot(111)
-        FigureCanvasQTAgg.__init__(self, fig)
-
-
-class LogStream(logging.StreamHandler):
-    def __init__(self, parent=None):
-        super().__init__()
-        self.logging_box = parent.loggingBox
-        self.setStream(sys.stdout)
-
-    def emit(self, text):
-        message = self.format(text)
-        self.logging_box.appendPlainText(str(message))
-
-    def write(self, text):
-        pass
-
-    def flush(self):
-        pass
-
-
 class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.comparisons = []
         self.config_items = []
         self.config_names = []
-        self.isPopulated = {"colList1": False, "colList2": False, "compList": False, "compTable": False}
+        self.isPopulated = {"colList1": False, "colList2": False,
+                            "compList": False, "compTable": False}
 
         uic.loadUi(MAIN_UI, self)
+        QSettings('myorg', 'myapp1').clear()
+        QSettings('myorg', 'myapp2').clear()
 
         # set up logger
         self.setup_logger()
@@ -422,21 +79,38 @@ class MainWindow(QMainWindow):
 
         # set up config table
         self.config_items = self._read_json()
-        self.config_names = [i['name'].replace(' ', '_').lower() for i in self.config_items]
+        self.config_names = [i['name'].replace(
+            ' ', '_').lower() for i in self.config_items]
         self.configTableModel = ConfigTableModel(self.config_items)
         self.configTable.setModel(self.configTableModel)
         self.configTable.setItemDelegateForColumn(2, ComboBoxDelegate(self))
-        self.configTable.setItemDelegateForColumn(3, LineEditDelegate(self, 'value'))
-        self.configTable.setItemDelegateForColumn(4, LineEditDelegate(self, 'fields'))
+        self.configTable.setItemDelegateForColumn(
+            3, LineEditDelegate(self, 'value'))
+        self.configTable.setItemDelegateForColumn(
+            4, LineEditDelegate(self, 'fields'))
         self.configTable.resizeColumnToContents(1)
-        
+
+        # set up input parameter table
+        self.ip_button1 = InputParametersButton(
+            self.inputParamsButton1, 1)
+        self.ip_button2 = InputParametersButton(
+            self.inputParamsButton2, 2)
+
         # set up column select
+        self.remove_one_button = ColumnSelectButton(
+            self.removeOneButton, "remove_one", self
+        )
+        self.remove_all_button = ColumnSelectButton(
+            self.removeAllButton, "remove_all", self
+        )
         self.dataset1Columns_model = None
         self.dataset2Columns_model = None
 
         # set column buttons
-        self.add_one_button = ColumnSelectButton(self.addOneButton, "add_one", self)
-        self.add_all_button = ColumnSelectButton(self.addAllButton, "add_all", self)
+        self.add_one_button = ColumnSelectButton(
+            self.addOneButton, "add_one", self)
+        self.add_all_button = ColumnSelectButton(
+            self.addAllButton, "add_all", self)
         self.remove_one_button = ColumnSelectButton(
             self.removeOneButton, "remove_one", self
         )
@@ -507,7 +181,7 @@ class MainWindow(QMainWindow):
 
     def _write_json(self, validation_data):
         assert validation_data, LOGGER.error("Validation data not found")
-        
+
         config_items = {
             'type':
             {
@@ -525,10 +199,10 @@ class MainWindow(QMainWindow):
                 'value': entry['value'],
                 'fields': entry['fields']
             }
-        
+
         with open(VALID_FILE, "w") as write_file:
             json.dump(config_items, write_file)
-        
+
         return config_items
 
     def _read_json(self):
@@ -550,7 +224,7 @@ class MainWindow(QMainWindow):
                 config_dict["value"] = val_settings["value"]
                 config_dict["fields"] = val_settings["fields"]
                 config_items.append(config_dict)
-        
+
         return config_items
 
     def create_plots(self, data, is_profile=False):
@@ -574,7 +248,8 @@ class MainWindow(QMainWindow):
 
                 plot_model = Plot(self)
                 try:
-                    comp_trimmed = data.loc[:, data.columns != "diff_col"].transpose()
+                    comp_trimmed = data.loc[:,
+                                            data.columns != "diff_col"].transpose()
                     plot_model.ax.axes.bar(
                         x=list(comp_trimmed.index),
                         height=comp_trimmed[row_name].tolist(),
@@ -591,7 +266,8 @@ class MainWindow(QMainWindow):
                     plot_model.setSizePolicy(
                         QSizePolicy.Expanding, QSizePolicy.Expanding
                     )
-                    self.plotsGridLayout.addWidget(plot_model, row_num, column_num)
+                    self.plotsGridLayout.addWidget(
+                        plot_model, row_num, column_num)
                 except Exception as e:
                     LOGGER.error("Encountered an error while adding plot")
                     LOGGER.error(e)
@@ -627,7 +303,7 @@ class MainWindow(QMainWindow):
         self.comparisonsTabLayout.setCurrentIndex(1)
 
     def compare(self):
-        
+
         # start with clean slate
         self.reset()
 
@@ -671,9 +347,10 @@ class MainWindow(QMainWindow):
 
         self._clear_plots()
         if create_plots_checked and not comp_df.empty:
-            # remove validation fields 
+            # remove validation fields
             if perform_validations:
-                cols_to_drop = [col for col in list(comp_df.index) if col in self.config_names]
+                cols_to_drop = [col for col in list(
+                    comp_df.index) if col in self.config_names]
                 if cols_to_drop:
                     comp_df = comp_df.drop(cols_to_drop)
             self.create_plots(comp_df)
@@ -695,7 +372,8 @@ class MainWindow(QMainWindow):
         self.dataset2Columns.clearSelection()
 
         if len(colList1_indexes) < 1 or len(colList2_indexes) < 1:
-            LOGGER.error("Two columns must be selected in order to create a comparison")
+            LOGGER.error(
+                "Two columns must be selected in order to create a comparison")
             return
 
         colList1_index = colList1_indexes[0]
@@ -752,7 +430,8 @@ class MainWindow(QMainWindow):
             col1 = col
             col2 = col
             if DATASET1[col1].data_type != DATASET2[col2].data_type:
-                LOGGER.error("{} is of type and {} is of type. Could not be compare".format(col1, col2))
+                LOGGER.error(
+                    "{} is of type and {} is of type. Could not be compare".format(col1, col2))
                 continue
             comp_name = "{}-{}".format(col1, col2)
             if not self._is_novel_comparison(comp_name):
@@ -822,29 +501,42 @@ class MainWindow(QMainWindow):
         if ds_num == 1:
             DATASET1 = dataset
 
+            if DATASET1 == None:
+                LOGGER.error("Dataset 1 was not sucessfully loaded")
+                return
+
             # set columns
             self.dataset1Columns_model = DatasetColumnsListModel(DATASET1)
             self.dataset1Columns.setModel(self.dataset1Columns_model)
 
-            self.isPopulated["colList1"] = True if len(DATASET1.columns) > 0 else False
+            self.isPopulated["colList1"] = True if len(
+                DATASET1.columns) > 0 else False
 
             # set dataframe table
-            self.dataframe1Table_model = DataframeTableModel(DATASET1.dataframe)
+            self.dataframe1Table_model = DataframeTableModel(
+                DATASET1.dataframe)
             self.dataframe1Table.setModel(self.dataframe1Table_model)
             self.ds_details_button1 = DatasetDetailsButton(
                 self.datasetDetails1Button, dataset
             )
+
         if ds_num == 2:
             DATASET2 = dataset
+
+            if DATASET2 == None:
+                LOGGER.error("Dataset 2 was not sucessfully loaded")
+                return
 
             # set columns
             self.dataset2Columns_model = DatasetColumnsListModel(DATASET2)
             self.dataset2Columns.setModel(self.dataset2Columns_model)
 
-            self.isPopulated["colList2"] = True if len(DATASET2.columns) > 0 else False
+            self.isPopulated["colList2"] = True if len(
+                DATASET2.columns) > 0 else False
 
             # set dataframe table
-            self.dataframe2Table_model = DataframeTableModel(DATASET2.dataframe)
+            self.dataframe2Table_model = DataframeTableModel(
+                DATASET2.dataframe)
             self.dataframe2Table.setModel(self.dataframe2Table_model)
             self.ds_details_button2 = DatasetDetailsButton(
                 self.datasetDetails2Button, dataset

@@ -1,7 +1,7 @@
 """
 ### CODE OWNERS: Demerrick Moton
 ### OBJECTIVE:
-    data model for data file object
+    Data model for dataset object
 ### DEVELOPER NOTES:
 """
 import logging
@@ -31,8 +31,6 @@ ACCEPTED_INPUT_FORMATS = [
     "json",
     "txt",
 ]
-
-
 VALID_FILE = "components/validations_config.json"
 
 logging.basicConfig(
@@ -154,14 +152,17 @@ class Dataset(object):
             data = pd.read_csv(str(self.path), **load_params)
         elif self.input_format == "txt":
             if "sep" not in list(load_params.keys()):
-                raise ValueError("Please provide a valid delimiter for this text file")
+                raise ValueError(
+                    "Please provide a valid delimiter for this text file")
             data = pd.read_table(str(self.path), **load_params)
         elif self.input_format == "parquet":
-            data = pd.read_parquet(str(self.path), engine="pyarrow", **load_params)
+            data = pd.read_parquet(
+                str(self.path), engine="pyarrow", **load_params)
         elif self.input_format == "json":
             data = pd.read_json(str(self.path), **load_params)
         else:
-            raise ValueError("Path type {} not recognized".format(self.input_format))
+            raise ValueError(
+                "Path type {} not recognized".format(self.input_format))
         end_time = datetime.now()
         self.load_time = str(end_time - start_time)
         return data
@@ -198,18 +199,23 @@ class Dataset(object):
             LOGGER.info(raw_col_name)
             raw_column = self.convert_dates(self.dataframe[raw_col_name])
             if re.search(r"(int)", str(raw_column.dtype)):
-                self.columns[raw_col_name] = NumericColumn(raw_column, self.name)
+                self.columns[raw_col_name] = NumericColumn(
+                    raw_column, self.name)
             if re.search(r"(float)", str(raw_column.dtype)):
-                self.columns[raw_col_name] = NumericColumn(raw_column, self.name)
+                self.columns[raw_col_name] = NumericColumn(
+                    raw_column, self.name)
             if (
                 re.search(r"(str)", str(raw_column.dtype))
                 or str(raw_column.dtype) == "object"
             ):
-                self.columns[raw_col_name] = StringColumn(raw_column, self.name)
+                self.columns[raw_col_name] = StringColumn(
+                    raw_column, self.name)
             if re.search(r"(time)", str(raw_column.dtype)):
-                self.columns[raw_col_name] = TemporalColumn(raw_column, self.name)
+                self.columns[raw_col_name] = TemporalColumn(
+                    raw_column, self.name)
             if re.search(r"(bool)", str(raw_column.dtype)):
-                self.columns[raw_col_name] = BooleanColumn(raw_column, self.name)
+                self.columns[raw_col_name] = BooleanColumn(
+                    raw_column, self.name)
 
     def get_summary(self):
         return {
@@ -255,7 +261,7 @@ class Column(object):
 
     def __eq__(self, other_col):
         return other_col.__class__ == self.__class__
-    
+
     def load_validation_settings(self):
         validation_data = None
         if not validation_data:
@@ -295,7 +301,7 @@ class StringColumn(Column):
             "text_length_std": self.text_length_std,
             "unique": self.unique,
             "duplicates": self.duplicates,
-            #'top': self.top
+            # 'top': self.top
         }
 
     def perform_check(self, row_limit=-1) -> dict:
@@ -352,7 +358,7 @@ class TemporalColumn(Column):
             "min": self.min,
             "max": self.max,
             "unique": self.unique,
-            #'top': self.top
+            # 'top': self.top
         }
 
     def perform_check(self) -> dict:
@@ -379,4 +385,3 @@ class BooleanColumn(Column):
     def perform_check(self) -> dict:
         validation_settings = self.load_validation_settings()
         return check_boolean_column(self, validation_settings["boolean"])
-

@@ -2,7 +2,7 @@
 ### CODE OWNERS: Demerrick Moton
 
 ### OBJECTIVE:
-    Main function to house the implementation of data comparator tool
+    Main module for the implementation of data comparator tool
 
 ### DEVELOPER NOTES:
 """
@@ -36,6 +36,8 @@ def load_dataset(data_source, data_source_name: str = "", **load_params):
         data_source_name: 
             Custom name for the resulting dataset. Default will 
             be provided if null
+        other input parameters for the given datas source type:
+            e.g. usecols=['id', 'username'] for csv data source
     Output:
         Resulting dataset collection
     """
@@ -50,12 +52,13 @@ def load_dataset(data_source, data_source_name: str = "", **load_params):
         dataset_index = len(datasets)
         src_name = "dataset_" + str(dataset_index)
 
-    LOGGER.info("\nCreating dataset '{}' from source:\n '{}'".format(src_name, src))
+    LOGGER.info(
+        "\nCreating dataset '{}' from source:\n '{}'".format(src_name, src))
 
     dataset = Dataset(data_src=src, name=src_name, **load_params)
     DATA_CUPBOARD.write_data("dataset", src_name, dataset)
 
-    print("\nDone")
+    LOGGER.info('Done loading dataset {}'.format(src_name))
 
     return dataset
 
@@ -102,11 +105,11 @@ def load_datasets(
         else:
             dataset = Dataset(data_src=src, name=src_name)
 
-        print("\nCreating dataset '{}'".format(src_name))
+        LOGGER.info("Creating dataset '{}'".format(src_name))
 
         DATA_CUPBOARD.write_data("dataset", src_name, dataset)
 
-        print("\nDone")
+        LOGGER.info("Done loading datasets")
 
     if not data_source_names:
         data_source_names = src_names
@@ -138,11 +141,24 @@ def get_dataset(ds_name):
     return DATA_CUPBOARD.read_data("dataset", ds_name)
 
 
-def pop_dataset(comp_name):
-    return DATA_CUPBOARD.pop_data("dataset", comp_name)
+def pop_dataset(ds_name):
+    """
+    Return and remove a particular dataset
+    Parameters: 
+        ds_name: dataset name
+    Output:
+        The specified dataset
+    """
+    return DATA_CUPBOARD.pop_data("dataset", ds_name)
 
 
 def pop_datasets():
+    """
+    Return and remove all datasets
+    Parameters:
+    Output:
+        All datasets
+    """
     return DATA_CUPBOARD.pop_data("dataset")
 
 
@@ -152,9 +168,9 @@ def clear_datasets():
     Parameters:
     Output:
     """
-    print("\nClearing all saved datasets...")
+    LOGGER.info("Clearing all saved datasets...")
     DATA_CUPBOARD.remove_data("dataset")
-    print("\nDone")
+    LOGGER.info("Done clearing datasets")
 
 
 def remove_dataset(src_name):
@@ -165,20 +181,32 @@ def remove_dataset(src_name):
     Output:
     """
     try:
-        print("Removing {}".format(src_name))
+        LOGGER.info("Removing {}".format(src_name))
         DATA_CUPBOARD.remove_data("dataset", src_name)
     except NameError:
-        print("ERROR: Could not find dataset {}".format(src_name))
-    print("\nDone")
+        LOGGER.error("Could not find dataset {}".format(src_name))
+    LOGGER.info("Done removing dataset {}".format(src_name))
 
 
 def _get_compare_df(
     comp: Comparison, col1_checks: dict, col2_checks: dict, add_diff_col
 ):
+    """
+    Create dataframe from comparison object
+    Parameters:
+        comp: comparison object
+        col1_checks: column 1 checks dictionary
+        col2_checks: column 2 checks dictionary
+        add_diff_col: difference column flag
+    Output:
+        comparison dataframe
+    """
     col1 = comp.col1
     col2 = comp.col2
-    col1_values = list(col1.get_summary().values()) + list(col1_checks.values())
-    col2_values = list(col2.get_summary().values()) + list(col2_checks.values())
+    col1_values = list(col1.get_summary().values()) + \
+        list(col1_checks.values())
+    col2_values = list(col2.get_summary().values()) + \
+        list(col2_checks.values())
     col_keys = list(col1.get_summary().keys()) + list(col1_checks.keys())
 
     assert len(col1_values) == len(
@@ -195,7 +223,8 @@ def _get_compare_df(
         col2_name = comp.col2.name
 
     if add_diff_col:
-        checks_added = (len(col1_checks) == len(col2_checks)) and (len(col1_checks) > 0)
+        checks_added = (len(col1_checks) == len(
+            col2_checks)) and (len(col1_checks) > 0)
         data = {
             col1_name: col1_values,
             col2_name: col2_values,
@@ -223,14 +252,15 @@ def compare(
     """
     A function for comparing two raw data sources
     Parameters:
-        ds_pair1: Tuple with first data source and \
+        data_source1: Tuple with first data source and \
             desired column e.g. ('stocks.parquet', 'price')
-        ds_pair2: Tuple with second data source and \
+        data_source2: Tuple with second data source and \
             desired column e.g. ('stocks.parquet', 'price')
-        ds_names: List with custom names for ds_pairs. Must provide two names.
-        ds_params_list: List with load params for each dataset.
+        col_pairs: tuple with column 1 and column 2 names to compare \
+            or a list with such tuples. Must provide two names.
+        ds_name1: Name of the first data source
+        ds_name2: Name of the second data source
         perform_check: Set as True to perform check for the columns
-        compare: Set as True to perform the comparison
         save_comp: Set as True to save the comparison in a \
             global variable
         add_diff_col: Set as True to add a column showing the \
@@ -238,15 +268,15 @@ def compare(
     Output:
         Dataframe of compared variables
     """
+    _df = None
     assert data_source1 and data_source2, "Two datasets must be provided for comparison"
 
     # need to first process raw data sources into dataset objects
-    data_src1 = ds_pair1[0]
-    data_src2 = ds_pair2[0]
     ds1, ds2 = load_datasets(
         data_source1,
         data_source2,
-        data_source_names=[ds_name1, ds_name2] if (ds_name1 or ds_name2) else None,
+        data_source_names=[ds_name1, ds_name2] if (
+            ds_name1 or ds_name2) else None,
         load_params_list=[{}, {}],
     )
 
@@ -269,7 +299,7 @@ def compare(
         elif type(col_pairs) == tuple and len(col_pairs) == 2:
             cols_to_compare = col_pairs
         else:
-            print("Invalid column pairs entry {}".format(col_pairs))
+            LOGGER.warn("Invalid column pairs entry {}".format(col_pairs))
 
     for pair in cols_to_compare:
         col_name1 = pair[0]
@@ -313,14 +343,12 @@ def compare_ds(
     Parameters:
         col1: Desired column to compare to
         col2: Desired columns to compare against
-        ds_names: List with custom names for ds_pairs. Must provide two names.
-        ds_params_list: List with load params for each dataset.
         perform_check: Set as True to perform check for the columns
-        compare: Set as True to perform the comparison
         save_comp: Set as True to save the comparison in a \
             global variable
         add_diff_col: Set as True to add a column showing the \
             different between the two columns
+        compare_by_col: Compare columns with the same names
     Output:
         Dataframe of compared variables
     """
@@ -344,18 +372,44 @@ def compare_ds(
 
 
 def get_comparisons():
+    """
+    Retrieve all comparison objects
+    Parameters:
+    Ouputs:
+        Comparison objects
+    """
     return DATA_CUPBOARD.read_data("comparison")
 
 
 def get_comparison(comp_name):
+    """
+    Retrieve a particular comparison object
+    Parameters:
+        comp_name: Name of comparison
+    Ouputs:
+        Comparison object
+    """
     return DATA_CUPBOARD.read_data("comparison", comp_name)
 
 
 def pop_comparison(comp_name):
+    """
+    Retrieve and remove a particular comparison object
+    Parameters:
+        comp_name: Name of comparison
+    Ouputs:
+        Comparison object
+    """
     return DATA_CUPBOARD.pop_data("comparison", comp_name)
 
 
 def pop_comparisons():
+    """
+    Retrieve and remove all comparison objects
+    Parameters:
+    Ouputs:
+        Comparison objects
+    """
     return DATA_CUPBOARD.pop_data("comparison")
 
 
@@ -366,21 +420,28 @@ def remove_comparison(comp_name):
         comp_name: Name of comparison to remove
     """
     try:
-        print("Removing comparison {}".format(comp_name))
+        LOGGER.info("Removing comparison {}".format(comp_name))
         DATA_CUPBOARD.remove_data("comparison", comp_name)
     except NameError:
-        print("Could not find comparison {}".format(comp_name))
-    print("\nDone")
+        LOGGER.warn("Could not find comparison {}".format(comp_name))
+    LOGGER.info("Done removing comparison")
 
 
 def clear_comparisons():
     """Removes all active copmarisons"""
-    print("\nClearing all active comparisons...")
+    LOGGER.info("Clearing all active comparisons...")
     DATA_CUPBOARD.remove_data("comparison")
-    print("\nDone")
+    LOGGER.info("Done clearing comparisons")
 
 
 def profile(column: Column):
+    """
+    Performs summary of single column object
+    Parameters:
+        column: Column object to profile
+    Outputs:
+        profile dataframe
+    """
     col_full = ".".join((column.ds_name, column.name))
     profile_init = pd.DataFrame.from_dict(column.get_summary(), orient="index")
     profile = profile_init.rename(columns={0: col_full})
@@ -391,6 +452,7 @@ def profile(column: Column):
 
 
 def pop_all():
+    """Retrieve and remove all active copmarisons"""
     return DATA_CUPBOARD.pop_data()
 
 
@@ -400,6 +462,12 @@ def clear_all():
 
 
 def view(comp_name):
+    """
+    Performs summary of single column object
+    Parameters:
+        column: Column object to profile
+    Outputs:
+        profile dataframe
+    """
     comp = DATA_CUPBOARD.read_data("comparison", comp_name)
     print(comp.dataframe)
-
