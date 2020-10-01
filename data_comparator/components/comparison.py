@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from components.dataset import Dataset, Column
+from .dataset import Dataset, Column
 
 logging.basicConfig(format="%(asctime)s - %(message)s")
 LOGGER = logging.getLogger(__name__)

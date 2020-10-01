@@ -13,9 +13,9 @@ from typing import Type, Union
 
 import pandas as pd
 
-from components.dataset import Dataset, Column
-from components.comparison import Comparison
-from components.data_cupboard import DataCupboard
+from .components.dataset import Dataset, Column
+from .components.comparison import Comparison
+from .components.data_cupboard import DataCupboard
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)

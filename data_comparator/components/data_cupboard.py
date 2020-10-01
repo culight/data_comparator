@@ -6,7 +6,7 @@
 """
 import logging
 import os
-from components.dataset import Dataset
+from .dataset import Dataset
 
 logging.basicConfig(
     format="%(asctime)s - %(message)s", level=os.environ.get("LOGLEVEL", "INFO")
@@ -21,7 +21,8 @@ LOGGER = logging.getLogger(__name__)
 
 class DataCupboard(object):
     def __init__(self):
-        self.entry_types = ("dataset", "comparison", "comp_dataframes", "profiles")
+        self.entry_types = ("dataset", "comparison",
+                            "comp_dataframes", "profiles")
 
         self.components = {
             "dataset": {},

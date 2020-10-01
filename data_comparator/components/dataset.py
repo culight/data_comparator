@@ -15,7 +15,7 @@ import json
 import pandas as pd
 from PyQt5.QtWidgets import QProgressBar
 
-from components.check import (
+from .check import (
     check_string_column,
     check_numeric_column,
     check_boolean_column,
@@ -143,7 +143,7 @@ class Dataset(object):
         return formatted_size
 
     def _load_data_frompath(self, **load_params) -> pd.DataFrame:
-        LOGGER.info("\nLoading raw data into dataset object...")
+        LOGGER.debug("\nLoading raw data into dataset object...")
         data = None
         start_time = datetime.now()
         if self.input_format == "sas7bdat":
@@ -168,7 +168,7 @@ class Dataset(object):
         return data
 
     def _load_data_fromdf(self, df) -> pd.DataFrame:
-        LOGGER.info("\nLoading raw data into dataset object...")
+        LOGGER.debug("\nLoading raw data into dataset object...")
         data = None
         start_time = datetime.now()
         if "pyspark" in self.input_format:
@@ -192,11 +192,11 @@ class Dataset(object):
         return raw_column
 
     def _prepare_columns(self):
-        LOGGER.info("\nPreparing columns...")
+        LOGGER.debug("\nPreparing columns...")
         if len(self.dataframe.columns) == 0:
             raise TypeError("No columns found for this dataframe")
         for raw_col_name in self.dataframe.columns:
-            LOGGER.info(raw_col_name)
+            LOGGER.debug(raw_col_name)
             raw_column = self.convert_dates(self.dataframe[raw_col_name])
             if re.search(r"(int)", str(raw_column.dtype)):
                 self.columns[raw_col_name] = NumericColumn(
