@@ -7,6 +7,7 @@
 ### DEVELOPER NOTES:
 """
 import logging
+import os
 
 import pandas as pd
 import numpy as np
@@ -14,7 +15,9 @@ import matplotlib.pyplot as plt
 
 from .dataset import Dataset, Column
 
-logging.basicConfig(format="%(asctime)s - %(message)s")
+logging.basicConfig(
+    format="%(asctime)s - %(message)s", level=os.environ.get("LOGLEVEL", "INFO")
+)
 LOGGER = logging.getLogger(__name__)
 
 # =============================================================================

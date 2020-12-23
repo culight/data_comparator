@@ -11,7 +11,12 @@ import string
 import pandas as pd
 import numpy as np
 from dateutil.parser import parse
+import logging
 
+logging.basicConfig(
+    format="%(asctime)s - %(message)s", level=os.environ.get("LOGLEVEL", "INFO")
+)
+LOGGER = logging.getLogger(__name__)
 # =============================================================================
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
 # =============================================================================
@@ -27,11 +32,9 @@ def check_string_column(column, validations, row_limit=None):
         if settings["enabled"] and doCheck:
             string_checks[case] = ""
 
-    print(string_checks)
-
     spec_chars = set(string.punctuation)
 
-    print("\nPerforming check for string column...")
+    LOGGER.info("Performing check for string column...")
     rows = rows if not row_limit else rows[0:row_limit]
     for index, row_content in rows.iteritems():
         skip = False
@@ -108,6 +111,7 @@ def check_string_column(column, validations, row_limit=None):
 def check_numeric_column(column, validations):
     df = column.data.to_frame()
 
+    LOGGER.info("Performing check for numeric column...")
     numeric_checks = {}
     for case, settings in validations.items():
         doCheck = (len(settings["fields"]) == 0) or (
@@ -160,6 +164,7 @@ def check_numeric_column(column, validations):
 
 def check_temporal_column(column, validations):
 
+    LOGGER.info("Performing check for temporal (time, datatime, etc.) column...")
     temporal_checks = {}
     for case, settings in validations.items():
         doCheck = (len(settings["fields"]) == 0) or (
@@ -187,6 +192,7 @@ def check_temporal_column(column, validations):
 
 
 def check_boolean_column(column, validations):
+    LOGGER.info("Performing check for boolean column...")
     boolean_checks = {}
     for case, settings in validations.items():
         doCheck = (len(settings["fields"]) == 0) or (

@@ -2,7 +2,7 @@
 ### CODE OWNERS: Demerrick Moton
 ### OBJECTIVE:
     data model for data file object
-### DEVELOPER NOTES:
+### DEVELOPER NOTES: I just like the "cupboard"... don't be so judgemental
 """
 import logging
 import os
