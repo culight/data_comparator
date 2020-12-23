@@ -1,6 +1,7 @@
 from pathlib import Path
 
-import data_comparator.data_comparator as dc
+import data_comparator as dc
+import components
 
 TEST_DATA_DIR = "tests/test_data"
 
@@ -9,7 +10,28 @@ TEST_DATA_PATH = {key: [] for key in VALID_DATA_TYPES}
 TEST_DATA = {key: [] for key in VALID_DATA_TYPES}
 
 
+def load_dataset(ds_type):
+    """
+    Test the load_dataset functionality
+
+    Args:
+        ds_type ([str]): [file type of the dataset]
+    """
+    global TEST_DATA
+    data_source_paths = TEST_DATA_PATH[ds_type]
+    for data_source in data_source_paths:
+        data_source_name = data_source.stem
+        print('\n', 'Testing ', data_source_name, '...')
+        TEST_DATA[ds_type] = dc.load_dataset(
+            data_source=data_source,
+            data_source_name=data_source_name
+        )
+
+
 def test_load_data():
+    """
+    Load the test data
+    """
     for file_type in Path(TEST_DATA_DIR).glob('*'):
         if file_type.stem not in VALID_DATA_TYPES:
             continue
@@ -22,17 +44,6 @@ def test_load_data():
                 else:
                     print(extension, ' is not a valid extension')
     assert(len(TEST_DATA_PATH) > 0)
-
-
-def load_dataset(ds_type):
-    data_source_paths = TEST_DATA_PATH[ds_type]
-    for data_source in data_source_paths:
-        data_source_name = data_source.stem
-        print('\n', 'Testing ', data_source_name, '...')
-        TEST_DATA[ds_type] = dc.load_dataset(
-            data_source=data_source,
-            data_source_name=data_source_name
-        )
 
 
 def test_load_dataset_csv():

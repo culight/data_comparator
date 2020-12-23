@@ -9,7 +9,6 @@
 from logging import Logger
 
 from pandas.core.algorithms import value_counts
-from components.dataset import Dataset
 import sys
 import logging
 from pathlib import Path
@@ -29,8 +28,8 @@ from matplotlib.backends.backend_qt5agg import (
 )
 
 from view_models import *
-
 import data_comparator as dc
+from components.dataset import Dataset
 
 MAIN_UI = "ui/data_comparator.ui"
 DETAIL_DLG = "ui/data_detail_dialog.ui"
