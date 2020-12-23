@@ -1,15 +1,10 @@
-
-
-clean-pyc:
+clean:
 	find . -name '*.pyc' -exec rm --force {} +
 	find . -name '*.pyo' -exec rm --force {} +
 	name '*~' -exec rm --force  {}
-
 lint:
-	flake8 --exclude=.tox
-
+	pylint
 run:
-	python manage.py runserver
-
+	cd src && python app.py
 test:
-	PYTHONPATH=. pytest -s ./tests
+	PYTHONPATH=. python -m pytest -s -o log_cli=true
