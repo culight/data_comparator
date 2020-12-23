@@ -2,8 +2,9 @@
 test_data/
 prior_comparison/
 
-# ignore vs code stuff
+# ignore ancillary stuff
 .vscode/
+.DS_Store
 
 # ignore extraneous python files
 __pycache__/
