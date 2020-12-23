@@ -8,8 +8,3 @@ prior_comparison/
 
 # ignore extraneous python files
 __pycache__/
-
-#ignore file types
-*.csv
-*.parquet
-*.log
