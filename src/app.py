@@ -4,7 +4,7 @@
 ### OBJECTIVE:
     GUI Application for Data Comparator
 
-### DEVELOPER NOTES:
+### DEVELOPER NOTES: To run this in parent directory - Enter "Make run" in console
 """
 from logging import Logger
 
@@ -53,6 +53,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MainWindow(QMainWindow):
+    """
+    Main QT Window Class
+
+    Args:
+        QMainWindow: QMainWindow parent object
+    """
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.comparisons = []
@@ -227,6 +233,13 @@ class MainWindow(QMainWindow):
         return config_items
 
     def create_plots(self, data, is_profile=False):
+        """
+        Cceate plots for the select comparisons
+
+        Args:
+            data (Pandas DataFrame): data of interest
+            is_profile (bool, optional): flag indicating a single column. Defaults to False.
+        """
         if is_profile:
             plot_model = Plot(self)
             plot_model.ax.axes.boxplot(data)
@@ -274,6 +287,13 @@ class MainWindow(QMainWindow):
                 index += 1
 
     def profile(self, col, ds):
+        """
+        provide profile info for one column
+
+        Args:
+            col (str): column name of interest
+            ds (dataset): dataset of interest
+        """
         perform_validations = self.performValidationsCheckbox.isChecked()
         create_plots_checked = self.createVizCheckbox.isChecked()
 
@@ -302,6 +322,9 @@ class MainWindow(QMainWindow):
         self.comparisonsTabLayout.setCurrentIndex(1)
 
     def compare(self):
+        """
+        compare datasets of interest
+        """
 
         # start with clean slate
         self.reset()
@@ -357,6 +380,9 @@ class MainWindow(QMainWindow):
         self.comparisonsTabLayout.setCurrentIndex(1)
 
     def reset(self):
+        """
+        reset the tables
+        """
         # clear table
         self._clear_plots()
         if self.isPopulated['compTable']:
@@ -416,6 +442,9 @@ class MainWindow(QMainWindow):
         self._update_setup()
 
     def add_comparisons(self):
+        """
+        add set of columns to list of active comparisons
+        """
         colList1_cols = self.dataset1Columns_model.cols[1:]
         colList2_cols = self.dataset2Columns_model.cols[1:]
 
@@ -469,6 +498,9 @@ class MainWindow(QMainWindow):
         self._update_setup()
 
     def clear_comparisons(self):
+        """
+        remove active comparisons
+        """
         if not self.isPopulated["compList"]:
             LOGGER.error("No rows to delete")
             return
@@ -486,6 +518,9 @@ class MainWindow(QMainWindow):
         self._update_setup()
 
     def setup_logger(self):
+        """
+        setup logging for this session
+        """
         font = QFont("Arial", 5)
         self.loggingBox.setFont(font)
 
@@ -494,6 +529,13 @@ class MainWindow(QMainWindow):
         logging.getLogger().addHandler(logHandler)
 
     def render_data(self, dataset, ds_num):
+        """
+        process the selected columns and display in info details section
+
+        Args:
+            dataset (dataset): dataset of interest
+            ds_num (int): dataset index
+        """
         global DATASET1
         global DATASET2
 
