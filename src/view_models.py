@@ -7,6 +7,7 @@
 ### DEVELOPER NOTES:
 """
 from logging import Logger
+import typing
 
 from pandas.core.algorithms import value_counts
 from components.dataset import Dataset
@@ -50,17 +51,13 @@ LOGGER = logging.getLogger(__name__)
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
 # =============================================================================
 
-
-class SelectFileButton(QPushButton):
-    def __init__(self, button, ds_num, parent):
-        super(SelectFileButton, self).__init__()
-        self.parent = parent
+class FileLoader():
+    def __init__(self, dataset=None, ds_num=None, parent_fileloader=None):
         self.ds_num = ds_num
-        self.btn = button
-        self.btn.clicked.connect(self.getFile)
-        self.dataset = None
-
-    def set_input_params(self):
+        self.parent_fileloader = parent_fileloader
+        self.dataset = dataset
+    
+    def _set_input_params(self):
         self.input_params = {}
         value_subs = {
             'none': None,
@@ -85,27 +82,16 @@ class SelectFileButton(QPushButton):
                     value = value.split(',')
 
                 self.input_params.update({key: value})
-
-    def getFile(self):
-        self.set_input_params()
-
-        file_diag = QFileDialog()
-        fname = file_diag.getOpenFileName(
-            self,
-            "Open file",
-            "c:\\",
-            "Data Files ({}, *)".format(
-                ",".join(["*." + frmt for frmt in ACCEPTED_INPUT_FORMATS])
-            ),
-        )[0]
-
-        if not fname:
+    
+    def _load_data(self, fname: str):
+        if not self.ds_num:
             return
 
         data_path = Path(fname)
-
         if (".part-" in fname) or ("._SUCCESS" in fname):
-            data_path = data_path.parent
+            data_path = data_path.parent_fileloader
+
+        self._set_input_params()
 
         file_type = data_path.name.split(".")[-1]
         ds_postfix = "_ds" + str(self.ds_num)
@@ -125,12 +111,39 @@ class SelectFileButton(QPushButton):
         except (TypeError, AttributeError, ValueError) as e:
             LOGGER.error(str(e))
 
-        self.onDatasetLoaded()
+        self._onDatasetLoaded()
 
-    def onDatasetLoaded(self):
-        self.parent.render_data(self.dataset, self.ds_num)
+    def _onDatasetLoaded(self):
+        self.parent_fileloader.render_data(self.dataset, self.ds_num)
 
 
+class SelectFileButton(QPushButton, FileLoader):
+    def __init__(self, button, ds_num, parent):
+        super(SelectFileButton, self).__init__(
+            ds_num=ds_num,
+            parent_fileloader=parent
+        )
+        self.btn = button
+        self.btn.clicked.connect(self.getFile)
+        self.dataset = None
+
+    def getFile(self):
+        file_diag = QFileDialog()
+        fname = file_diag.getOpenFileName(
+            self,
+            "Open file",
+            "c:\\",
+            "Data Files ({}, *)".format(
+                ",".join(["*." + frmt for frmt in ACCEPTED_INPUT_FORMATS])
+            ),
+        )[0]
+
+        if not fname:
+            return
+
+        self._load_data(fname=fname)
+
+    
 class ColumnSelectButton(QPushButton):
     def __init__(self, button, mode, parent=None):
         super(QPushButton, self).__init__()
@@ -534,12 +547,50 @@ class InputParamsTableModel(QAbstractTableModel):
         return None
 
 
-class DatasetColumnsListModel(QAbstractListModel):
-    def __init__(self, dataset=None, parent=None):
-        super(DatasetColumnsListModel, self).__init__(parent)
+class DatasetColumnsListModel(QAbstractListModel, FileLoader):
+    def __init__(self, dataset=None, ds_num=None, parent=None):
+        super(DatasetColumnsListModel, self).__init__(
+            dataset=dataset,
+            ds_num=ds_num,
+            parent_fileloader=parent
+        )
         self.cols = ["====="]
+        self.filename = None
         if dataset != None:
             self.cols = self.cols + list(dataset.columns.keys())
+            self.dataset = dataset
+            self.filename = dataset.path
+        else:
+            self.dataset = None
+        
+    def canDropMimeData(self, data: 'QMimeData', action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
+        filename = data.urls()[0].toLocalFile()
+        if str(filename) == str(self.filename):
+            return super().canDropMimeData(data, action, row, column, parent)
+
+        if filename:
+            file_type = Path(filename).name.split(".")[-1]
+            if file_type not in ACCEPTED_INPUT_FORMATS:
+                return super().canDropMimeData(data, action, row, column, parent)
+
+        self.filename = filename
+        self._load_data(fname=self.filename)
+        return super().canDropMimeData(data, action, row, column, parent)
+
+    def dropMimeData(self, data: 'QMimeData', action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
+        return super().dropMimeData(data, action, row, column, parent)
+
+    def mimeTypes(self) -> typing.List[str]:
+        return super().mimeTypes()
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        return super().flags(index)
+
+    def mimeTypes(self) -> typing.List[str]:
+        return super().mimeTypes()
+
+    def supportedDropActions(self) -> Qt.DropActions:
+        return Qt.CopyAction
 
     def data(self, index, role=Qt.DisplayRole):
         if role == Qt.DisplayRole:

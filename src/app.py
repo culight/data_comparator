@@ -43,7 +43,7 @@ DATASET2 = None
 VALIDS = {}
 
 logging.basicConfig(
-    stream=sys.stdout, format="%(asctime)s - %(message)s", level=logging.DEBUG
+    stream=sys.stdout, format="%(asctime)`s` - %(message)s", level=logging.DEBUG
 )
 LOGGER = logging.getLogger(__name__)
 
@@ -73,6 +73,14 @@ class MainWindow(QMainWindow):
 
         # set up logger
         self.setup_logger()
+
+        # set up dataset columns
+        self.dataset1Columns.setAcceptDrops(True)
+        self.dataset2Columns.setAcceptDrops(True)
+        self.dataset1Columns_model = DatasetColumnsListModel(ds_num=1, parent=self)
+        self.dataset2Columns_model = DatasetColumnsListModel(ds_num=2, parent=self)
+        self.dataset1Columns.setModel(self.dataset1Columns_model)
+        self.dataset2Columns.setModel(self.dataset2Columns_model)
 
         # set up select file buttons
         self.dataset1_select_file_button = SelectFileButton(
@@ -547,7 +555,9 @@ class MainWindow(QMainWindow):
                 return
 
             # set columns
-            self.dataset1Columns_model = DatasetColumnsListModel(DATASET1)
+            self.dataset1Columns_model = DatasetColumnsListModel(
+                dataset=DATASET1, ds_num=1, parent=self
+            )
             self.dataset1Columns.setModel(self.dataset1Columns_model)
 
             self.isPopulated["colList1"] = True if len(
@@ -569,7 +579,9 @@ class MainWindow(QMainWindow):
                 return
 
             # set columns
-            self.dataset2Columns_model = DatasetColumnsListModel(DATASET2)
+            self.dataset2Columns_model = DatasetColumnsListModel(
+                dataset=DATASET2, ds_num=2, parent=self
+            )
             self.dataset2Columns.setModel(self.dataset2Columns_model)
 
             self.isPopulated["colList2"] = True if len(
