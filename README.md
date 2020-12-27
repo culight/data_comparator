@@ -4,12 +4,12 @@
 Data Comparator is a pandas-based data profiling tool for quick and modular profiling of two datasets. The primary inspiration for this project was quickly comparing two datasets from a number of different formats after some transformation was applied, but a range of capabilities have/will continue to been implemented. 
 
 Data Comparator would be useful for the following scenarios:
-    - Compare old/new (or original/modified) datasets to find general differences
-    - Routine EDA of a dataframe
-    - Compare two datasets of different formats
-    - Profile a dataset during interactive debugging
-    - Compare various columns within the same dataset
-    - Check for specific abnormalities within a dataset
+- Compare old/new (or original/modified) datasets to find general differences
+- Routine EDA of a dataframe
+- Compare two datasets of different formats
+- Profile a dataset during interactive debugging
+- Compare various columns within the same dataset
+- Check for specific abnormalities within a dataset
 
 ## Usage
 Data Comparator has both command line and graphical user interfaces.
@@ -165,7 +165,7 @@ skin_care_ds.get_summary()
  ```
 
  The dataset object is subscriptable, so you can access individual columns as a subscript. We're accessing the summary for the *Revenue* column in the snippet below.
- 
+
  ```
 skin_care_ds["Revenue"].get_summary()
 
