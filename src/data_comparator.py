@@ -297,7 +297,7 @@ def compare(
         if type(col_pairs) == list and len(col_pairs) > 0:
             cols_to_compare = col_pairs
         elif type(col_pairs) == tuple and len(col_pairs) == 2:
-            cols_to_compare = col_pairs
+            cols_to_compare = [col_pairs]
         else:
             LOGGER.warn("Invalid column pairs entry {}".format(col_pairs))
 

@@ -2,7 +2,7 @@
 ### CODE OWNERS: Demerrick Moton
 ### OBJECTIVE:
     data model for data file object
-### DEVELOPER NOTES: I just like the "cupboard"... don't be so judgemental
+### DEVELOPER NOTES: I just like the word "cupboard"... don't be so judgemental
 """
 import logging
 import os
@@ -82,9 +82,9 @@ class DataCupboard(object):
             self.components[entry_type].clear()
         elif entry_type and entry_name:
             # remove a specific entry
-            self.components[entry_type][entry_name].clear()
+            del self.components[entry_type][entry_name]
         else:
-            print("Please provide entry type")
+            LOGGER.warning("Please provide entry type")
 
     def pop_data(self, entry_type=None, entry_name=None):
         output = None
