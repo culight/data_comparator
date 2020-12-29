@@ -26,6 +26,7 @@ pip install data_comparator
 ```
 make run
 ```
+![GUI example](docs/examples/data_comp_tut.mov)
 
 ### Loading Data
 
