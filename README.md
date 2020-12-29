@@ -99,7 +99,7 @@ boston_listings_path = Path("/path/to/airbnb_data/bos_listings.csv")
 dc.compare(sea_path, bos_path, ("beds", "beds"), add_diff_col=True)
 ```
 
-![comparison exmaple](https://github.com/culight/data_comparator/blob/update_docs/docs/examples/compare_example.png){:height="50%" width="50%"}
+![comparison exmaple](https://github.com/culight/data_comparator/blob/update_docs/docs/examples/compare_example.png)
 
 
 ### Other Features
