@@ -14,12 +14,28 @@ Data Comparator would be useful for the following scenarios:
 ## Usage
 Data Comparator has both command line and graphical user interfaces.
 
+
+
 ### Installation
 Use [pip](https://pip.pypa.io/en/stable/) to install the Data Comparator package:
 
 ```
 pip install data_comparator
 ```
+
+
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+
+
+### Graphical User Interface
+
+```
+make run
+```
+
+
+
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
@@ -34,19 +50,19 @@ from pathlib import Path
 avo_path = Path("/path/to/avo_data")
 ```
 
-**Load From a File**
+ #### Load From a File
 
 ```
 avo2020_dataset = dc.load_dataset(avo_path / "avocado2020.csv", "avo2020")
 ```
 
-**Load from a (Pandas or Spark) dataframe**
+#### Load from a (Pandas or Spark) dataframe
 
 ```
 avo2019_dataset = dc.load_dataset(avocado2019_df, "avo2019")
 ```
 
-**Load With Input Parameters**
+#### Load With Input Parameters
 
 ```
 avo2020_adj_dataset = dc.load_dataset(
@@ -58,7 +74,7 @@ avo2020_adj_dataset = dc.load_dataset(
 ```
 Note that [PyArrow](https://arrow.apache.org/docs/index.html) is the default engine for reading parquets in Data Comparator.
 
-**Load Multiple Datasets**
+#### Load Multiple Datasets
 
 ```
 avo2017_path = avoPath / "avocado2017.sas7bdat"
@@ -74,42 +90,13 @@ avo2017_ds, avo2018_ds = avo2018_dsdc.load_datasets(
 In the snippet above, I'm reading in the 2017 SAS file as is, and reading the 2018 one incrementally - 1000 lines at a time.
 
 
-**Example Output**
-
-```
-avo2017_ds = dc.get_dataset("avo2017")
-avo2017_ds.get_summary()
-
-avo2017_ds.get_summary()
-{'path': PosixPath('/path/to/avo_data/avocado2017.sas7bdat'),
- 'format': 'sas7bdat',
- 'size': '1.90 MB',
- 'columns': {'Unnamed: 0': <components.dataset.NumericColumn at 0x7fa9d05c0940>,
-  'Date': <components.dataset.TemporalColumn at 0x7fa9d05c01f0>,
-  'AveragePrice': <components.dataset.NumericColumn at 0x7fa9d05c03d0>,
-  'Total Volume': <components.dataset.NumericColumn at 0x7fa9d05c0100>,
-  '4046': <components.dataset.NumericColumn at 0x7fa9d05c0df0>,
-  '4225': <components.dataset.NumericColumn at 0x7fa9d05c0160>,
-  '4770': <components.dataset.NumericColumn at 0x7fa9d05c0ca0>,
-  'Total Bags': <components.dataset.NumericColumn at 0x7fa9d05c0c10>,
-  'Small Bags': <components.dataset.NumericColumn at 0x7fa9d05c0730>,
-  'Large Bags': <components.dataset.NumericColumn at 0x7fa9d05c0970>,
-  'XLarge Bags': <components.dataset.NumericColumn at 0x7fa9d05c0d30>,
-  'type': <components.dataset.StringColumn at 0x7fa9d05c0e20>,
-  'year': <components.dataset.NumericColumn at 0x7fa9d05c0820>,
-  'region': <components.dataset.StringColumn at 0x7fa9d05c00a0>},
- 'ds_name': 'avo2017',
- 'load_time': '0:00:00.032595'}
- ```
-
-
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
 
 
 ### Comparing Data
 
-**Compare Datasets**
+#### Compare Datasets
 
 ```
 avo2020_ds = dc.getDataset("avo2020")
@@ -118,7 +105,7 @@ avo2020_adj_ds = dc.getDataset("avo2020_adjusted)
 dc.compare_ds(avo2019_ds, avo2020_adj_ds)
 ```
 
-***Compare Files***
+#### Compare Files
 
 ```
 dc.compare(
@@ -127,7 +114,7 @@ dc.compare(
 )
 ```
 
-**Example Output**
+#### Example Output
 
 ```
 seattle_listings_path = Path("/path/to/airbnb_data/sea_listings.csv")
@@ -144,8 +131,7 @@ dc.compare(sea_path, bos_path, ("beds", "beds"), add_diff_col=True)
 
 ### Other Features
 
-
-**Quick Dataset Summary**
+#### Quick Dataset Summary
 Basic metadata and summary information is provided for the dataset object.
 
 ```
@@ -181,7 +167,7 @@ skin_care_ds["Revenue"].get_summary()
  'zeros': 1433}
  ```
 
-**Perform Checks**
+#### Perform Checks
 I've added some basic data validations for various data types. Use the *perform_checks()* method to perform the validations. Note that String type comparisons can be computationally expensive; consider using the row_limit flag when perform checks on columns of String type.
 
 ```
@@ -193,11 +179,6 @@ skin_care_ds["Revenue"].perform_check()
 ```
 I'm still working out the kinks with some of the checks (numeric checks, like above, to be exact).
 Check the *src/validation_config.json* to manage validations.
-
-------------------------------------------------------------------------------
-------------------------------------------------------------------------------
-
-## Graphical User Interface
 
 
 ## Authors
