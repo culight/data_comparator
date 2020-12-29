@@ -5,6 +5,6 @@ clean:
 lint:
 	pylint
 run:
-	cd src && python app.py
+	cd data_comparator && python app.py
 test:
 	PYTHONPATH=. python -m pytest -s -o log_cli=true

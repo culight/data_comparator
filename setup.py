@@ -1,16 +1,17 @@
 #!/usr/bin/env python
+import setuptools
 
-from distutils.core import setup
-
-setup(
+setuptools.setup(
+    name="data-comparator-dmoton3.14",
     version='0.5.0',
     author='Demerrick Moton',
-    email="dmoton3.14@gmail.com",
-    packages=[
-        'data_comparator',
-        'data_comparator.components'
-    ],
+    author_email="dmoton3.14@gmail.com",
+    packages={
+        "data_comparator.data_comparator",
+        "data_comparator.app"
+    },
     long_description=open('README.md').read(),
+    long_description_content_type="text/markdown",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

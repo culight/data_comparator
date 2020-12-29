@@ -605,9 +605,13 @@ class MainWindow(QMainWindow):
             self.add_all_button.button.setEnabled(False)
 
 
-if __name__ == "__main__":
+def main(*args, **kwargs):
     app = QApplication(sys.argv)
     app.setApplicationName("Data Comparator")
 
     window = MainWindow()
     app.exec_()
+
+
+if __name__ == "__main__":
+    sys.exit(main())
