@@ -15,7 +15,6 @@ Data Comparator would be useful for the following scenarios:
 Data Comparator has both command line and graphical user interfaces.
 
 
-
 ### Installation
 Use [pip](https://pip.pypa.io/en/stable/) to install the Data Comparator package:
 
@@ -23,23 +22,10 @@ Use [pip](https://pip.pypa.io/en/stable/) to install the Data Comparator package
 pip install data_comparator
 ```
 
-
-------------------------------------------------------------------------------
-------------------------------------------------------------------------------
-
-
 ### Graphical User Interface
-
 ```
 make run
 ```
-
-
-
-
-------------------------------------------------------------------------------
-------------------------------------------------------------------------------
-
 
 ### Loading Data
 
@@ -51,19 +37,16 @@ avo_path = Path("/path/to/avo_data")
 ```
 
  #### Load From a File
-
 ```
 avo2020_dataset = dc.load_dataset(avo_path / "avocado2020.csv", "avo2020")
 ```
 
 #### Load from a (Pandas or Spark) dataframe
-
 ```
 avo2019_dataset = dc.load_dataset(avocado2019_df, "avo2019")
 ```
 
 #### Load With Input Parameters
-
 ```
 avo2020_adj_dataset = dc.load_dataset(
     data_source=avoPath / "avo2020_adjusted.parquet,
@@ -75,7 +58,6 @@ avo2020_adj_dataset = dc.load_dataset(
 Note that [PyArrow](https://arrow.apache.org/docs/index.html) is the default engine for reading parquets in Data Comparator.
 
 #### Load Multiple Datasets
-
 ```
 avo2017_path = avoPath / "avocado2017.sas7bdat"
 avo2018_path = avoPath / "avocado2018.sas7bdat"
@@ -90,14 +72,9 @@ avo2017_ds, avo2018_ds = avo2018_dsdc.load_datasets(
 In the snippet above, I'm reading in the 2017 SAS file as is, and reading the 2018 one incrementally - 1000 lines at a time.
 
 
-------------------------------------------------------------------------------
-------------------------------------------------------------------------------
-
-
 ### Comparing Data
 
 #### Compare Datasets
-
 ```
 avo2020_ds = dc.getDataset("avo2020")
 avo2020_adj_ds = dc.getDataset("avo2020_adjusted)
@@ -106,7 +83,6 @@ dc.compare_ds(avo2019_ds, avo2020_adj_ds)
 ```
 
 #### Compare Files
-
 ```
 dc.compare(
     avo_path / "avocado2020.csv",
@@ -115,7 +91,6 @@ dc.compare(
 ```
 
 #### Example Output
-
 ```
 seattle_listings_path = Path("/path/to/airbnb_data/sea_listings.csv")
 boston_listings_path = Path("/path/to/airbnb_data/bos_listings.csv")
@@ -123,10 +98,6 @@ boston_listings_path = Path("/path/to/airbnb_data/bos_listings.csv")
 dc.compare(sea_path, bos_path, ("beds", "beds"), add_diff_col=True)
 
 ```
-
-
-------------------------------------------------------------------------------
-------------------------------------------------------------------------------
 
 
 ### Other Features
