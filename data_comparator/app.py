@@ -10,7 +10,6 @@
 import sys
 import logging
 import json
-import os
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
