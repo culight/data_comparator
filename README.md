@@ -11,33 +11,36 @@ Data Comparator would be useful for the following scenarios:
 - Compare various columns within the same dataset
 - Check for specific abnormalities within a dataset
 
-## Usage
-Data Comparator has both command line and graphical user interfaces.
 
-
-### Installation
+## Setup
 Use [pip](https://pip.pypa.io/en/stable/) to install the Data Comparator package:
 
+### Installation
 ```
 pip install data_comparator
 ```
 
-### Graphical User Interface
-```
-make run
-```
-![GUI example](docs/examples/data_comp_tut.mov)
+### Running
+A command line interface and graphical user interface are provided.
 
-### Loading Data
-
+#### Command Line:
 ```
-import data_comparator as dc
-from pathlib import Path
-
-avo_path = Path("/path/to/avo_data")
+import data_comparator.data_comparator as dc
 ```
 
- #### Load From a File
+#### GUI:
+```
+python -m data_comparator.app
+```
+
+
+### Usage
+User can load, profile, validate, and compare datasets as shown below. For the sake of example, I'm using a dataset that provides historical avocado prices.
+
+### Loading data
+Data can be loaded from a file or dropped into the data column boxes in the first tab. Note that the loading will happen automatically, so carefully drop the files *directly* into the desired box. I'm (theoretically) working on refining this. 
+
+#### Load From a File
 ```
 avo2020_dataset = dc.load_dataset(avo_path / "avocado2020.csv", "avo2020")
 ```
@@ -74,6 +77,7 @@ In the snippet above, I'm reading in the 2017 SAS file as is, and reading the 20
 
 
 ### Comparing Data
+Data from various types can be compared with user-specified columns or all identically-named columns between the datasets. The comparisons are automatically saved for each session.
 
 #### Compare Datasets
 ```
@@ -92,17 +96,12 @@ dc.compare(
 ```
 
 #### Example Output
-```
-seattle_listings_path = Path("/path/to/airbnb_data/sea_listings.csv")
-boston_listings_path = Path("/path/to/airbnb_data/bos_listings.csv")
-
-dc.compare(sea_path, bos_path, ("beds", "beds"), add_diff_col=True)
-```
 
 ![comparison exmaple](https://github.com/culight/data_comparator/blob/update_docs/docs/examples/compare_example.png)
 
 
 ### Other Features
+Some metadata for each dataset/comparison object is provided. Here, I use a cosmetic product dataset to illustrate some use cases.
 
 #### Quick Dataset Summary
 Basic metadata and summary information is provided for the dataset object.
@@ -152,6 +151,10 @@ skin_care_ds["Revenue"].perform_check()
 ```
 I'm still working out the kinks with some of the checks (numeric checks, like above, to be exact).
 Check the *src/validation_config.json* to manage validations.
+
+
+## Coming Attractions
+Updates and fixes (mostly [here](https://github.com/culight/data_comparator/issues)) will be forthcoming. This was a random project that I started for my own practical use in the field, so I'm certainly open to collaboration/feedback. You can drop a comment or find my email below.
 
 
 ## Authors
