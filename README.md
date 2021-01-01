@@ -34,8 +34,12 @@ python -m data_comparator.app
 ```
 
 
-### Usage
+## Usage
 User can load, profile, validate, and compare datasets as shown below. For the sake of example, I'm using a dataset that provides historical avocado prices.
+
+![gui data loading image](https://github.com/culight/data_comparator/blob/update_docs/docs/examples/data_loading_exp.png)
+
+![gui data detail exmaple](https://github.com/culight/data_comparator/blob/update_docs/docs/examples/data_detail_exp.png)
 
 ### Loading data
 Data can be loaded from a file or dropped into the data column boxes in the first tab. Note that the loading will happen automatically, so carefully drop the files *directly* into the desired box. I'm (theoretically) working on refining this. 
