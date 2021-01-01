@@ -295,7 +295,7 @@ class MainWindow(QMainWindow):
         perform_validations = self.performValidationsCheckbox.isChecked()
         create_plots_checked = self.createVizCheckbox.isChecked()
 
-        profile = dc.rofile(ds[col])
+        profile = dc.profile(ds[col])
 
         try:
             dtype = profile.loc[["data_type"]][0][0]

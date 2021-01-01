@@ -28,10 +28,9 @@ from matplotlib.backends.backend_qt5agg import (
 
 import data_comparator.data_comparator as dc
 
-MAIN_UI = "ui/data_comparator.ui"
-DETAIL_DLG = "ui/data_detail_dialog.ui"
-INPUT_PARAMS_DLG = "ui/input_parameters_dialog.ui"
-VALID_FILE = "components/validations_config.json"
+UI_DIR = Path(__file__).parent / "ui"
+DETAIL_DLG_DIR = str(UI_DIR / "data_detail_dialog.ui")
+INPUT_PARAMS_DLG_DIR = str(UI_DIR / "input_parameters_dialog.ui")
 ACCEPTED_INPUT_FORMATS = ["sas7bdat", "csv", "parquet", "json"]
 NON_PLOT_ROWS = ["ds_name", "name", "data_type"]
 
@@ -163,7 +162,7 @@ class ColumnSelectButton(QPushButton):
 class DataDetailDialog(QDialog):
     def __init__(self, dataset):
         super(DataDetailDialog, self).__init__()
-        uic.loadUi(DETAIL_DLG, self)
+        uic.loadUi(DETAIL_DLG_DIR, self)
 
         self.detailDialogTable.horizontalHeader().setSectionResizeMode(
             QHeaderView.Interactive
@@ -211,14 +210,14 @@ class DatasetDetailsButton(QPushButton):
 
     def onClicked(self):
         if self.dataset != None:
-            detail_dlg = DataDetailDialog(self.dataset)
-            detail_dlg.exec_()
+            DETAIL_DLG_DIR = DataDetailDialog(self.dataset)
+            DETAIL_DLG_DIR.exec_()
 
 
 class InputParametersDialog(QDialog):
     def __init__(self, num):
         super(InputParametersDialog, self).__init__()
-        uic.loadUi(INPUT_PARAMS_DLG, self)
+        uic.loadUi(INPUT_PARAMS_DLG_DIR, self)
 
         # set the initial value
         self.input_params = [['', '']]
@@ -294,8 +293,8 @@ class InputParametersButton(QPushButton):
         self.button.clicked.connect(self.onClicked)
 
     def onClicked(self):
-        detail_dlg = InputParametersDialog(self.num)
-        detail_dlg.exec_()
+        DETAIL_DLG_DIR = InputParametersDialog(self.num)
+        DETAIL_DLG_DIR.exec_()
 
 
 class OpenConfigButton(QPushButton):

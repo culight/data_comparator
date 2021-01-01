@@ -13,7 +13,6 @@ import re
 import json
 
 import pandas as pd
-from PyQt5.QtWidgets import QProgressBar
 
 from .check import (
     check_string_column,
@@ -31,7 +30,8 @@ ACCEPTED_INPUT_FORMATS = [
     "json",
     "txt",
 ]
-VALID_FILE = "components/validations_config.json"
+COMP_DIR = Path(__file__).parent
+VALID_FILE = str(COMP_DIR / "validations_config.json")
 
 logging.basicConfig(
     stream=sys.stdout, format="%(asctime)s - %(message)s", level=logging.DEBUG
