@@ -7,15 +7,14 @@
 ### DEVELOPER NOTES:
 """
 # pylint: disable=no-member
-import sys
 import logging
-from typing import Type, Union
+from typing import Union
 
 import pandas as pd
 
-from components.dataset import Dataset, Column
-from components.comparison import Comparison
-from components.data_cupboard import DataCupboard
+from .components.dataset import Dataset, Column
+from .components.comparison import Comparison
+from .components.data_cupboard import DataCupboard
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
@@ -297,7 +296,7 @@ def compare(
         if type(col_pairs) == list and len(col_pairs) > 0:
             cols_to_compare = col_pairs
         elif type(col_pairs) == tuple and len(col_pairs) == 2:
-            cols_to_compare = col_pairs
+            cols_to_compare = [col_pairs]
         else:
             LOGGER.warn("Invalid column pairs entry {}".format(col_pairs))
 

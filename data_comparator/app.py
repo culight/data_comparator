@@ -4,15 +4,11 @@
 ### OBJECTIVE:
     GUI Application for Data Comparator
 
-### DEVELOPER NOTES:
+### DEVELOPER NOTES: To run this in parent directory - Enter "Make run" in console
 """
-from logging import Logger
 
-from pandas.core.algorithms import value_counts
-from components.dataset import Dataset
 import sys
 import logging
-from pathlib import Path
 import json
 
 from PyQt5.QtGui import *
@@ -21,22 +17,15 @@ from PyQt5.QtCore import *
 from PyQt5.QtPrintSupport import *
 from PyQt5 import uic
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import (
-    FigureCanvasQTAgg,
-    NavigationToolbar2QT as NavigationToolbar,
-)
+from pathlib import Path
 
-from view_models import *
+from .view_models import *
+from data_comparator import data_comparator as dc
 
-import data_comparator as dc
-
-MAIN_UI = "ui/data_comparator.ui"
-DETAIL_DLG = "ui/data_detail_dialog.ui"
-INPUT_PARAMS_DLG = "ui/input_parameters_dialog.ui"
-VALID_FILE = "components/validations_config.json"
-ACCEPTED_INPUT_FORMATS = ["sas7bdat", "csv", "parquet", "json"]
+UI_DIR = Path(__file__).parent / "ui"
+COMP_DIR = Path(__file__).parent / "components"
+MAIN_UI_DIR = str(UI_DIR / "data_comparator.ui")
+VALID_FILE_DIR = str(COMP_DIR / "validations_config.json")
 NON_PLOT_ROWS = ["ds_name", "name", "data_type"]
 
 DATASET1 = None
@@ -44,7 +33,7 @@ DATASET2 = None
 VALIDS = {}
 
 logging.basicConfig(
-    stream=sys.stdout, format="%(asctime)s - %(message)s", level=logging.DEBUG
+    stream=sys.stdout, format="%(asctime)`s` - %(message)s", level=logging.DEBUG
 )
 LOGGER = logging.getLogger(__name__)
 
@@ -54,20 +43,35 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MainWindow(QMainWindow):
+    """
+    Main QT Window Class
+
+    Args:
+        QMainWindow: QMainWindow parent object
+    """
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
+
         self.comparisons = []
         self.config_items = []
         self.config_names = []
         self.isPopulated = {"colList1": False, "colList2": False,
                             "compList": False, "compTable": False}
 
-        uic.loadUi(MAIN_UI, self)
+        uic.loadUi(MAIN_UI_DIR, self)
         QSettings('myorg', 'myapp1').clear()
         QSettings('myorg', 'myapp2').clear()
 
         # set up logger
         self.setup_logger()
+
+        # set up dataset columns
+        self.dataset1Columns.setAcceptDrops(True)
+        self.dataset2Columns.setAcceptDrops(True)
+        self.dataset1Columns_model = DatasetColumnsListModel(ds_num=1, parent=self)
+        self.dataset2Columns_model = DatasetColumnsListModel(ds_num=2, parent=self)
+        self.dataset1Columns.setModel(self.dataset1Columns_model)
+        self.dataset2Columns.setModel(self.dataset2Columns_model)
 
         # set up select file buttons
         self.dataset1_select_file_button = SelectFileButton(
@@ -200,14 +204,14 @@ class MainWindow(QMainWindow):
                 'fields': entry['fields']
             }
 
-        with open(VALID_FILE, "w") as write_file:
+        with open(VALID_FILE_DIR, "w") as write_file:
             json.dump(config_items, write_file)
 
         return config_items
 
     def _read_json(self):
         validation_data = None
-        with open(VALID_FILE, "r") as read_file:
+        with open(VALID_FILE_DIR, "r") as read_file:
             validation_data = json.load(read_file)
 
         assert validation_data, LOGGER.error(
@@ -228,6 +232,13 @@ class MainWindow(QMainWindow):
         return config_items
 
     def create_plots(self, data, is_profile=False):
+        """
+        Cceate plots for the select comparisons
+
+        Args:
+            data (Pandas DataFrame): data of interest
+            is_profile (bool, optional): flag indicating a single column. Defaults to False.
+        """
         if is_profile:
             plot_model = Plot(self)
             plot_model.ax.axes.boxplot(data)
@@ -275,6 +286,13 @@ class MainWindow(QMainWindow):
                 index += 1
 
     def profile(self, col, ds):
+        """
+        provide profile info for one column
+
+        Args:
+            col (str): column name of interest
+            ds (dataset): dataset of interest
+        """
         perform_validations = self.performValidationsCheckbox.isChecked()
         create_plots_checked = self.createVizCheckbox.isChecked()
 
@@ -303,6 +321,9 @@ class MainWindow(QMainWindow):
         self.comparisonsTabLayout.setCurrentIndex(1)
 
     def compare(self):
+        """
+        compare datasets of interest
+        """
 
         # start with clean slate
         self.reset()
@@ -358,6 +379,9 @@ class MainWindow(QMainWindow):
         self.comparisonsTabLayout.setCurrentIndex(1)
 
     def reset(self):
+        """
+        reset the tables
+        """
         # clear table
         self._clear_plots()
         if self.isPopulated['compTable']:
@@ -417,6 +441,9 @@ class MainWindow(QMainWindow):
         self._update_setup()
 
     def add_comparisons(self):
+        """
+        add set of columns to list of active comparisons
+        """
         colList1_cols = self.dataset1Columns_model.cols[1:]
         colList2_cols = self.dataset2Columns_model.cols[1:]
 
@@ -470,6 +497,9 @@ class MainWindow(QMainWindow):
         self._update_setup()
 
     def clear_comparisons(self):
+        """
+        remove active comparisons
+        """
         if not self.isPopulated["compList"]:
             LOGGER.error("No rows to delete")
             return
@@ -487,6 +517,9 @@ class MainWindow(QMainWindow):
         self._update_setup()
 
     def setup_logger(self):
+        """
+        setup logging for this session
+        """
         font = QFont("Arial", 5)
         self.loggingBox.setFont(font)
 
@@ -495,6 +528,13 @@ class MainWindow(QMainWindow):
         logging.getLogger().addHandler(logHandler)
 
     def render_data(self, dataset, ds_num):
+        """
+        process the selected columns and display in info details section
+
+        Args:
+            dataset (dataset): dataset of interest
+            ds_num (int): dataset index
+        """
         global DATASET1
         global DATASET2
 
@@ -506,7 +546,9 @@ class MainWindow(QMainWindow):
                 return
 
             # set columns
-            self.dataset1Columns_model = DatasetColumnsListModel(DATASET1)
+            self.dataset1Columns_model = DatasetColumnsListModel(
+                dataset=DATASET1, ds_num=1, parent=self
+            )
             self.dataset1Columns.setModel(self.dataset1Columns_model)
 
             self.isPopulated["colList1"] = True if len(
@@ -528,7 +570,9 @@ class MainWindow(QMainWindow):
                 return
 
             # set columns
-            self.dataset2Columns_model = DatasetColumnsListModel(DATASET2)
+            self.dataset2Columns_model = DatasetColumnsListModel(
+                dataset=DATASET2, ds_num=2, parent=self
+            )
             self.dataset2Columns.setModel(self.dataset2Columns_model)
 
             self.isPopulated["colList2"] = True if len(
@@ -552,9 +596,19 @@ class MainWindow(QMainWindow):
             self.add_all_button.button.setEnabled(False)
 
 
-if __name__ == "__main__":
+def main(*args, **kwargs):
+    import pkg_resources
+
     app = QApplication(sys.argv)
     app.setApplicationName("Data Comparator")
 
+    version = pkg_resources.require("data-comparator")[0].version
+    window_title = "Data Comparator" + " - " + version
+    
     window = MainWindow()
+    window.setWindowTitle(window_title)
     app.exec_()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -2,13 +2,15 @@
 test_data/
 prior_comparison/
 
-# ignore vs code stuff
+# ignore ancillary stuff
 .vscode/
+.DS_Store
 
 # ignore extraneous python files
 __pycache__/
+*.pyc
 
-#ignore file types
-*.csv
-*.parquet
-*.log
+# ignore build files
+build/
+dist/
+*.egg-info
