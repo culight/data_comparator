@@ -42,7 +42,7 @@ python -m data_comparator.app
 User can load, profile, validate, and compare datasets as shown below. For the sake of example, I'm using a dataset that provides historical avocado prices.
 
 ### Loading data
-Data can be loaded from a file or dropped into the data column boxes in the first tab. Note that the loading will happen automatically, so carefully drop the files *directly* into the desired box. I'm (theoretically) working on refining this. 
+Data can be loaded from a file or dropped into the data column boxes in the *Data Loading* tab in the GUI. Note that the loading will happen automatically, so carefully drop the files *directly* into the desired box.
 
 #### Load From a File
 ```
