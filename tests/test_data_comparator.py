@@ -1,7 +1,6 @@
 from pathlib import Path
 
-import data_comparator as dc
-import components
+import data_comparator.data_comparator as dc
 
 TEST_DATA_DIR = "tests/test_data"
 

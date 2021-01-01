@@ -8,3 +8,9 @@ prior_comparison/
 
 # ignore extraneous python files
 __pycache__/
+*.pyc
+
+# ignore build files
+build/
+dist/
+*.egg-info
