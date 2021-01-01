@@ -2,8 +2,8 @@
 import setuptools
 
 setuptools.setup(
-    name="data-comparator-dmoton3.14",
-    version="0.5.9",
+    name="data-comparator",
+    version="0.5.1",
     author="Demerrick Moton",
     author_email="dmoton3.14@gmail.com",
     packages={"data_comparator", "data_comparator.components", "data_comparator.ui",},

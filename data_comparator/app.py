@@ -602,7 +602,7 @@ def main(*args, **kwargs):
     app = QApplication(sys.argv)
     app.setApplicationName("Data Comparator")
 
-    version = pkg_resources.require("data-comparator-dmoton3.14")[0].version
+    version = pkg_resources.require("data-comparator")[0].version
     window_title = "Data Comparator" + " - " + version
     
     window = MainWindow()
