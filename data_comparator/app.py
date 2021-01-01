@@ -51,6 +51,7 @@ class MainWindow(QMainWindow):
     """
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
+
         self.comparisons = []
         self.config_items = []
         self.config_names = []
@@ -596,10 +597,16 @@ class MainWindow(QMainWindow):
 
 
 def main(*args, **kwargs):
+    import pkg_resources
+
     app = QApplication(sys.argv)
     app.setApplicationName("Data Comparator")
 
+    version = pkg_resources.require("data-comparator-dmoton3.14")[0].version
+    window_title = "Data Comparator" + " - " + version
+    
     window = MainWindow()
+    window.setWindowTitle(window_title)
     app.exec_()
 
 
