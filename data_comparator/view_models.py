@@ -6,15 +6,13 @@
 
 ### DEVELOPER NOTES:
 """
-from logging import Logger
+import logging
 import typing
 
 from pandas.core.algorithms import value_counts
-from components.dataset import Dataset
 import sys
 import logging
 from pathlib import Path
-import json
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -26,10 +24,9 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg,
-    NavigationToolbar2QT as NavigationToolbar,
 )
 
-import data_comparator as dc
+import data_comparator.data_comparator as dc
 
 MAIN_UI = "ui/data_comparator.ui"
 DETAIL_DLG = "ui/data_detail_dialog.ui"

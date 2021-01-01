@@ -6,13 +6,11 @@
 
 ### DEVELOPER NOTES: To run this in parent directory - Enter "Make run" in console
 """
-from logging import Logger
 
-from pandas.core.algorithms import value_counts
 import sys
 import logging
-from pathlib import Path
 import json
+import os
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -20,22 +18,15 @@ from PyQt5.QtCore import *
 from PyQt5.QtPrintSupport import *
 from PyQt5 import uic
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import (
-    FigureCanvasQTAgg,
-    NavigationToolbar2QT as NavigationToolbar,
-)
+from pathlib import Path
 
-from view_models import *
-import data_comparator as dc
-from components.dataset import Dataset
+from .view_models import *
+from data_comparator import data_comparator as dc
 
-MAIN_UI = "ui/data_comparator.ui"
-DETAIL_DLG = "ui/data_detail_dialog.ui"
-INPUT_PARAMS_DLG = "ui/input_parameters_dialog.ui"
-VALID_FILE = "components/validations_config.json"
-ACCEPTED_INPUT_FORMATS = ["sas7bdat", "csv", "parquet", "json"]
+UI_DIR = Path(__file__).parent / "ui"
+COMP_DIR = Path(__file__).parent / "components"
+MAIN_UI_DIR = str(UI_DIR / "data_comparator.ui")
+VALID_FILE_DIR = str(COMP_DIR / "validations_config.json")
 NON_PLOT_ROWS = ["ds_name", "name", "data_type"]
 
 DATASET1 = None
@@ -67,7 +58,7 @@ class MainWindow(QMainWindow):
         self.isPopulated = {"colList1": False, "colList2": False,
                             "compList": False, "compTable": False}
 
-        uic.loadUi(MAIN_UI, self)
+        uic.loadUi(MAIN_UI_DIR, self)
         QSettings('myorg', 'myapp1').clear()
         QSettings('myorg', 'myapp2').clear()
 
@@ -213,14 +204,14 @@ class MainWindow(QMainWindow):
                 'fields': entry['fields']
             }
 
-        with open(VALID_FILE, "w") as write_file:
+        with open(VALID_FILE_DIR, "w") as write_file:
             json.dump(config_items, write_file)
 
         return config_items
 
     def _read_json(self):
         validation_data = None
-        with open(VALID_FILE, "r") as read_file:
+        with open(VALID_FILE_DIR, "r") as read_file:
             validation_data = json.load(read_file)
 
         assert validation_data, LOGGER.error(
@@ -305,7 +296,7 @@ class MainWindow(QMainWindow):
         perform_validations = self.performValidationsCheckbox.isChecked()
         create_plots_checked = self.createVizCheckbox.isChecked()
 
-        profile = dc.profile(ds[col])
+        profile = dc.rofile(ds[col])
 
         try:
             dtype = profile.loc[["data_type"]][0][0]
