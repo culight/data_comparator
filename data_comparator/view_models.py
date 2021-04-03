@@ -47,6 +47,12 @@ LOGGER = logging.getLogger(__name__)
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
 # =============================================================================
 
+
+class MenuBarModel(QMenuBar):
+    def __init__(self):
+        super(MenuBarModel, self).__init__()
+        
+
 class FileLoader():
     def __init__(self, dataset=None, ds_num=None, parent_fileloader=None):
         self.ds_num = ds_num

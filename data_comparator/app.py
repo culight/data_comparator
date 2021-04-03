@@ -65,6 +65,9 @@ class MainWindow(QMainWindow):
         # set up logger
         self.setup_logger()
 
+        # set up menu bar
+        self.menu_bar = self.menuBar
+
         # set up dataset columns
         self.dataset1Columns.setAcceptDrops(True)
         self.dataset2Columns.setAcceptDrops(True)
