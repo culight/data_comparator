@@ -171,7 +171,7 @@ class MainWindow(QMainWindow):
         # update combo box
         self.comparisonsComboBox.clear()
         comp_names = [col[0] for col in self.comparisons]
-        self.comparisonsComboBox.addItems(comp_names)
+        self.comparisonsComboBox.addItems(sorted(comp_names))
 
         # update compare and reset buttons
         if self.isPopulated["compList"]:

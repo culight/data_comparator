@@ -553,7 +553,7 @@ class DatasetColumnsListModel(QAbstractListModel, FileLoader):
         self.cols = ["====="]
         self.filename = None
         if dataset != None:
-            self.cols = self.cols + list(dataset.columns.keys())
+            self.cols = self.cols + list(sorted(dataset.columns.keys()))
             self.dataset = dataset
             self.filename = dataset.path
         else:
