@@ -33,9 +33,9 @@ import data_comparator.data_comparator as dc
 python -m data_comparator.app
 ```
 
-![gui data loading image](https://github.com/culight/data_comparator/blob/update_docs/docs/examples/data_loading_exp.png)
+![gui data loading image](https://github.com/culight/data_comparator/blob/master/docs/examples/data_loading_exp.png)
 
-![gui data detail exmaple](https://github.com/culight/data_comparator/blob/update_docs/docs/examples/data_detail_exp.png)
+![gui data detail exmaple](https://github.com/culight/data_comparator/blob/master/docs/examples/data_detail_exp.png)
 
 
 ## Usage
@@ -101,7 +101,7 @@ dc.compare(
 
 #### Example Output
 
-![comparison exmaple](https://github.com/culight/data_comparator/blob/update_docs/docs/examples/compare_example.png)
+![comparison exmaple](https://github.com/culight/data_comparator/blob/master/docs/examples/compare_example.png)
 
 
 ### Other Features
