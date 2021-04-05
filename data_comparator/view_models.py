@@ -49,9 +49,18 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MenuBarModel(QMenuBar):
-    def __init__(self):
+    def __init__(self, menuBar, parent):
         super(MenuBarModel, self).__init__()
-        
+        self.parent = parent
+        self.actionNew = parent.actionNew
+        self.actionExit = parent.actionExit
+        self.actionPDF = parent.actionPDF
+        self.actionCSV = parent.actionCSV
+        self.actionHTML = parent.actionHTML
+
+        self.actionNew.triggered.connect(self.parent.reset_all)
+        self.actionExit.triggered.connect(self.parent.quit)
+
 
 class FileLoader():
     def __init__(self, dataset=None, ds_num=None, parent_fileloader=None):

@@ -698,16 +698,25 @@
    </property>
   </action>
   <action name="actionPDF">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>PDF</string>
    </property>
   </action>
   <action name="actionHTML">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>HTML</string>
    </property>
   </action>
   <action name="actionCSV">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>CSV</string>
    </property>
