@@ -383,6 +383,9 @@ class MainWindow(QMainWindow):
         self.comparisonsTabLayout.setCurrentIndex(1)
     
     def quit(self):
+        """
+        exit the program
+        """
         confirm_dialog = QMessageBox.question(
             self, 
             "Data Comparator",
@@ -392,10 +395,6 @@ class MainWindow(QMainWindow):
 
         if confirm_dialog == QMessageBox.Yes:
             LOGGER.info("Exiting data comparator")
-            if DATASET1:
-                DATASET1 = None
-            if DATASET2:
-                DATASET2 = None
             sys.exit()
         else:
             pass
@@ -548,7 +547,7 @@ class MainWindow(QMainWindow):
         if self.dataset2Columns_model:
             self.dataset2Columns_model.reset()
             self.DATASET2 = None
-            
+
     def clear_comparisons(self):
         """
         remove active comparisons
