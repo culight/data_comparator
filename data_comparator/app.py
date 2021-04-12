@@ -543,14 +543,12 @@ class MainWindow(QMainWindow):
         remove loade datasets and clear from list view
         """
         if self.dataset1Columns_model:
-            self.dataset1Columns_model.cols = ["====="]
+            self.dataset1Columns_model.reset()
             self.DATASET1 = None
-            self.dataset1Columns_model.dataset = None
         if self.dataset2Columns_model:
-            self.dataset2Columns_model.cols = ["====="]
+            self.dataset2Columns_model.reset()
             self.DATASET2 = None
-            self.dataset2Columns_model.dataset = None
-
+            
     def clear_comparisons(self):
         """
         remove active comparisons

@@ -573,6 +573,11 @@ class DatasetColumnsListModel(QAbstractListModel, FileLoader):
             self.filename = dataset.path
         else:
             self.dataset = None
+    
+    def reset(self):
+        self.cols = ["====="]
+        self.filename = None
+        self.dataset = None
         
     def canDropMimeData(self, data: 'QMimeData', action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
         filename = data.urls()[0].toLocalFile()
