@@ -316,8 +316,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>476</width>
-         <height>442</height>
+         <width>415</width>
+         <height>413</height>
         </rect>
        </property>
        <attribute name="label">
@@ -648,18 +648,32 @@
      </property>
      <addaction name="separator"/>
     </widget>
-    <widget class="QMenu" name="menuExport">
+    <widget class="QMenu" name="menuExportAs">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="title">
-      <string>Export</string>
+      <string>Export As</string>
      </property>
      <addaction name="actionPDF"/>
      <addaction name="actionHTML"/>
      <addaction name="actionCSV"/>
     </widget>
+    <widget class="QMenu" name="menuSaveAs">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>Save As</string>
+     </property>
+     <addaction name="actionCSVSave"/>
+     <addaction name="actionParquetSave"/>
+    </widget>
     <addaction name="actionNew"/>
     <addaction name="menuRecent"/>
     <addaction name="separator"/>
-    <addaction name="menuExport"/>
+    <addaction name="menuExportAs"/>
+    <addaction name="menuSaveAs"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -745,6 +759,19 @@
   <action name="actionDocumentation">
    <property name="text">
     <string>Documentation</string>
+   </property>
+  </action>
+  <action name="actionCSVSave">
+   <property name="text">
+    <string>CSV</string>
+   </property>
+  </action>
+  <action name="actionParquetSave">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Parquet</string>
    </property>
   </action>
  </widget>
