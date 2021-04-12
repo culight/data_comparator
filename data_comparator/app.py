@@ -65,6 +65,10 @@ class MainWindow(QMainWindow):
         # set up logger
         self.setup_logger()
 
+        # set up menu bar
+        self.menuBar.setNativeMenuBar(False)
+        self.menuBarModel = MenuBarModel(self.menuBar, self)
+
         # set up dataset columns
         self.dataset1Columns.setAcceptDrops(True)
         self.dataset2Columns.setAcceptDrops(True)
@@ -142,7 +146,7 @@ class MainWindow(QMainWindow):
         # set up tabs column
         self.comparisonsTabLayout.setCurrentIndex(0)
 
-        # set up compare and reset buttons
+        # set up compare and `reset` buttons
         self.compareButton.clicked.connect(self.compare)
         self.resetButton.clicked.connect(self.reset)
 
@@ -377,7 +381,44 @@ class MainWindow(QMainWindow):
             self.create_plots(comp_df)
 
         self.comparisonsTabLayout.setCurrentIndex(1)
+    
+    def quit(self):
+        """
+        exit the program
+        """
+        confirm_dialog = QMessageBox.question(
+            self, 
+            "Data Comparator",
+            "Are you sure you want to quit?",
+            QMessageBox.Yes | QMessageBox.No
+        )
 
+        if confirm_dialog == QMessageBox.Yes:
+            LOGGER.info("Exiting data comparator")
+            sys.exit()
+        else:
+            pass
+
+    def reset_all(self):
+        """
+        reset all fields
+        """
+        confirm_dialog = QMessageBox.question(
+            self, 
+            "Data Comparator",
+            "Currently loaded data will be removed.",
+            QMessageBox.Cancel | QMessageBox.Ok
+        )
+
+        if confirm_dialog == QMessageBox.Ok:
+            LOGGER.info("Removing currently loaded data")
+            self.reset()
+            self.clear_comparisons()      
+            self.clear_datasets() 
+            dc.clear_all()
+        else:
+            pass
+        
     def reset(self):
         """
         reset the tables
@@ -495,6 +536,17 @@ class MainWindow(QMainWindow):
             self.add_all_button.button.setEnabled(True)
 
         self._update_setup()
+
+    def clear_datasets(self):
+        """
+        remove loade datasets and clear from list view
+        """
+        if self.dataset1Columns_model:
+            self.dataset1Columns_model.reset()
+            self.DATASET1 = None
+        if self.dataset2Columns_model:
+            self.dataset2Columns_model.reset()
+            self.DATASET2 = None
 
     def clear_comparisons(self):
         """

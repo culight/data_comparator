@@ -47,6 +47,21 @@ LOGGER = logging.getLogger(__name__)
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
 # =============================================================================
 
+
+class MenuBarModel(QMenuBar):
+    def __init__(self, menuBar, parent):
+        super(MenuBarModel, self).__init__()
+        self.parent = parent
+        self.actionNew = parent.actionNew
+        self.actionExit = parent.actionExit
+        self.actionPDF = parent.actionPDF
+        self.actionCSV = parent.actionCSV
+        self.actionHTML = parent.actionHTML
+
+        self.actionNew.triggered.connect(self.parent.reset_all)
+        self.actionExit.triggered.connect(self.parent.quit)
+
+
 class FileLoader():
     def __init__(self, dataset=None, ds_num=None, parent_fileloader=None):
         self.ds_num = ds_num
@@ -558,6 +573,11 @@ class DatasetColumnsListModel(QAbstractListModel, FileLoader):
             self.filename = dataset.path
         else:
             self.dataset = None
+    
+    def reset(self):
+        self.cols = ["====="]
+        self.filename = None
+        self.dataset = None
         
     def canDropMimeData(self, data: 'QMimeData', action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
         filename = data.urls()[0].toLocalFile()
