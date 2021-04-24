@@ -10,6 +10,7 @@
 import sys
 import logging
 import json
+from pathlib import Path
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -17,10 +18,12 @@ from PyQt5.QtCore import *
 from PyQt5.QtPrintSupport import *
 from PyQt5 import uic
 
-from pathlib import Path
-
-from .view_models import *
 from data_comparator import data_comparator as dc
+from .view_models.utilities import *
+from .view_models.buttons import *
+from .view_models.tables import *
+from .view_models.lists import *
+from .view_models.combo_boxes import *
 
 UI_DIR = Path(__file__).parent / "ui"
 COMP_DIR = Path(__file__).parent / "components"
