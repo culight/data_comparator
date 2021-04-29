@@ -19,11 +19,11 @@ from PyQt5.QtPrintSupport import *
 from PyQt5 import uic
 
 from data_comparator import data_comparator as dc
-from .view_models.utilities import *
-from .view_models.buttons import *
-from .view_models.tables import *
-from .view_models.lists import *
-from .view_models.combo_boxes import *
+from .ui_models.utilities import *
+from .ui_models.buttons import *
+from .ui_models.tables import *
+from .ui_models.lists import *
+from .ui_models.combo_boxes import *
 
 UI_DIR = Path(__file__).parent / "ui"
 COMP_DIR = Path(__file__).parent / "components"
@@ -43,6 +43,119 @@ LOGGER = logging.getLogger(__name__)
 # =============================================================================
 # LIBRARIES, LOCATIONS, LITERALS, ETC. GO ABOVE HERE
 # =============================================================================
+
+
+class MenuBar(QMenuBar):
+    def __init__(self, menuBar, parent):
+        super(MenuBar, self).__init__()
+        self.parent = parent
+        self.menuBar = menuBar
+        # self.comp_df = self.parent
+        self.actionNew = parent.actionNew
+        self.actionReset = parent.actionReset
+        self.actionExit = parent.actionExit
+        self.actionCSV = parent.actionCSV
+        self.actionParquet = parent.actionParquet
+        self.actionSAS = parent.actionsas7bdat
+
+        # self.actionNew.triggered.connect(self.new)
+        self.actionReset.triggered.connect(self.reset)
+        self.actionExit.triggered.connect(self.exit)
+
+    class ExportFile():
+        def __init__(self, dataframe, export_type):
+            self.export_type = export_type
+
+        def convert_to_type(self):
+            if self.export_type == "csv":
+                pass
+
+        def open_dialog(self):
+            file_diag = QFileDialog()
+            fname = file_diag.getOpenFileName(
+                self,
+                "Open file",
+                "c:\\",
+                "Data Files ({}, *)".format(
+                    ",".join(["*." + frmt for frmt in ACCEPTED_INPUT_FORMATS])
+                ),
+            )[0]
+    
+    def new(self):
+        """
+        Create new comparator
+        """
+        confirm_dialog = QMessageBox.question(
+            self.parent, 
+            "Data Comparator",
+            "A new Data Comparator session will be created",
+            QMessageBox.Cancel | QMessageBox.Ok
+        )
+
+        if confirm_dialog == QMessageBox.Ok:
+            LOGGER.info("Creating new Comparator window")
+            self.parent.__init__()
+        else:
+            pass
+
+    def reset(self):
+        """
+        Reset the fields
+        """
+        confirm_dialog = QMessageBox.question(
+            self.parent, 
+            "Data Comparator",
+            "Currently loaded data will be deleted",
+            QMessageBox.Cancel | QMessageBox.Ok
+        )
+
+        if confirm_dialog == QMessageBox.Ok:
+            LOGGER.info("Removing currently loaded data")
+            self.parent.clear_comparisons()      
+            self.parent.clear_datasets() 
+        else:
+            pass
+
+    def exit(self):
+        """
+        exit the program
+        """
+        confirm_dialog = QMessageBox.question(
+            self.parent, 
+            "Data Comparator",
+            "Are you sure you want to quit?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+
+        if confirm_dialog == QMessageBox.Yes:
+            LOGGER.info("Exiting data comparator")
+            sys.exit()
+        else:
+            pass
+
+    def export_to_csv(self):
+        """
+        Export the comparison table to csv
+        """
+        csv_file = self.ExportFile(export_type="csv")
+
+    def export_to_parquet(self):
+        """
+        Export the comparison table to parquet
+        """
+        parquet_file = self.ExportFile(export_type="parquet")
+
+    def export_to_sas(self):
+        """
+        Export the comparison table to sas7bdat
+        """
+        sas_file = self.ExportFile(export_type="sas7bdat")
+
+    def export_to_json(self):
+        """
+        Export the comparison table to json
+        """
+        json_file = self.ExportFile(export_type="parquet")
 
 
 class MainWindow(QMainWindow):
@@ -70,7 +183,7 @@ class MainWindow(QMainWindow):
 
         # set up menu bar
         self.menuBar.setNativeMenuBar(False)
-        self.menuBarModel = MenuBarModel(self.menuBar, self)
+        self.menuBarModel = MenuBar(self.menuBar, self)
 
         # set up dataset columns
         self.dataset1Columns.setAcceptDrops(True)
@@ -149,9 +262,9 @@ class MainWindow(QMainWindow):
         # set up tabs column
         self.comparisonsTabLayout.setCurrentIndex(0)
 
-        # set up compare and `reset` buttons
+        # set up compare and export buttons
         self.compareButton.clicked.connect(self.compare)
-        self.resetButton.clicked.connect(self.reset)
+        # self.exportButton.clicked.connect(self.export)
 
         # set up comparison output table
         self.comparisonTable.horizontalHeader().setSectionResizeMode(
@@ -183,8 +296,10 @@ class MainWindow(QMainWindow):
         # update compare and reset buttons
         if self.isPopulated["compList"]:
             self.compareButton.setEnabled(True)
+            self.exportButton.setEnabled(True)
         else:
             self.compareButton.setEnabled(False)
+            self.exportButton.setEnabled(False)
 
     def _clear_plots(self):
         for index in reversed(range(self.plotsGridLayout.count())):
@@ -313,7 +428,7 @@ class MainWindow(QMainWindow):
 
         self.comp_table_model = ComparisonOutputTableModel(profile)
         self.comparisonTable.setModel(self.comp_table_model)
-        self.resetButton.setEnabled(True)
+        self.exportButton.setEnabled(True)
 
         dtype = None
         try:
@@ -331,9 +446,6 @@ class MainWindow(QMainWindow):
         """
         compare datasets of interest
         """
-
-        # start with clean slate
-        self.reset()
 
         # get comparison names
         comp_name = self.comparisonsComboBox.currentText()
@@ -369,7 +481,7 @@ class MainWindow(QMainWindow):
 
             self.comp_table_model = ComparisonOutputTableModel(comp_df)
             self.comparisonTable.setModel(self.comp_table_model)
-            self.resetButton.setEnabled(True)
+            self.exportButton.setEnabled(True)
         else:
             LOGGER.error("Datasets not available to make comparisons")
 
@@ -384,54 +496,6 @@ class MainWindow(QMainWindow):
             self.create_plots(comp_df)
 
         self.comparisonsTabLayout.setCurrentIndex(1)
-    
-    def quit(self):
-        """
-        exit the program
-        """
-        confirm_dialog = QMessageBox.question(
-            self, 
-            "Data Comparator",
-            "Are you sure you want to quit?",
-            QMessageBox.Yes | QMessageBox.No
-        )
-
-        if confirm_dialog == QMessageBox.Yes:
-            LOGGER.info("Exiting data comparator")
-            sys.exit()
-        else:
-            pass
-
-    def reset_all(self):
-        """
-        reset all fields
-        """
-        confirm_dialog = QMessageBox.question(
-            self, 
-            "Data Comparator",
-            "Currently loaded data will be removed.",
-            QMessageBox.Cancel | QMessageBox.Ok
-        )
-
-        if confirm_dialog == QMessageBox.Ok:
-            LOGGER.info("Removing currently loaded data")
-            self.reset()
-            self.clear_comparisons()      
-            self.clear_datasets() 
-            dc.clear_all()
-        else:
-            pass
-        
-    def reset(self):
-        """
-        reset the tables
-        """
-        # clear table
-        self._clear_plots()
-        if self.isPopulated['compTable']:
-            self.comp_table_model.clear()
-        dc.clear_comparisons()
-        self.resetButton.setEnabled(False)
 
     def add_comparison(self):
         colList1_indexes = self.dataset1Columns.selectedIndexes()
@@ -546,9 +610,11 @@ class MainWindow(QMainWindow):
         """
         if self.dataset1Columns_model:
             self.dataset1Columns_model.reset()
+            self.dataframe1Table.setModel(None)
             self.DATASET1 = None
         if self.dataset2Columns_model:
             self.dataset2Columns_model.reset()
+            self.dataframe2Table.setModel(None)
             self.DATASET2 = None
 
     def clear_comparisons(self):

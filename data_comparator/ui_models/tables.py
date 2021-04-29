@@ -10,12 +10,14 @@ import sys
 import logging
 from pathlib import Path
 
+import pandas as pd
+
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtPrintSupport import *
 
-UI_DIR = Path(__file__).parent / "ui"
+UI_DIR = Path(__file__).parent.parent / "ui"
 DETAIL_DLG_DIR = str(UI_DIR / "data_detail_dialog.ui")
 INPUT_PARAMS_DLG_DIR = str(UI_DIR / "input_parameters_dialog.ui")
 ACCEPTED_INPUT_FORMATS = ["sas7bdat", "csv", "parquet", "json"]

@@ -316,7 +316,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>476</width>
+         <width>479</width>
          <height>442</height>
         </rect>
        </property>
@@ -415,13 +415,6 @@
                       </widget>
                      </item>
                      <item row="1" column="0">
-                      <widget class="QPushButton" name="openConfigButton">
-                       <property name="text">
-                        <string>Open Config File</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="2" column="0">
                       <widget class="QTableView" name="configTable">
                        <property name="sizeAdjustPolicy">
                         <enum>QAbstractScrollArea::AdjustIgnored</enum>
@@ -450,12 +443,12 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="resetButton">
+                  <widget class="QPushButton" name="exportButton">
                    <property name="enabled">
                     <bool>false</bool>
                    </property>
                    <property name="text">
-                    <string>Reset</string>
+                    <string>Export To HTML</string>
                    </property>
                   </widget>
                  </item>
@@ -650,13 +643,14 @@
     </widget>
     <widget class="QMenu" name="menuExport">
      <property name="title">
-      <string>Export</string>
+      <string>Export To</string>
      </property>
-     <addaction name="actionPDF"/>
-     <addaction name="actionHTML"/>
      <addaction name="actionCSV"/>
+     <addaction name="actionParquet"/>
+     <addaction name="actionsas7bdat"/>
     </widget>
     <addaction name="actionNew"/>
+    <addaction name="actionReset"/>
     <addaction name="menuRecent"/>
     <addaction name="separator"/>
     <addaction name="menuExport"/>
@@ -682,6 +676,9 @@
    <addaction name="menuHelp"/>
   </widget>
   <action name="actionNew">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>New</string>
    </property>
@@ -745,6 +742,30 @@
   <action name="actionDocumentation">
    <property name="text">
     <string>Documentation</string>
+   </property>
+  </action>
+  <action name="actionParquet">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Parquet</string>
+   </property>
+  </action>
+  <action name="actionsas7bdat">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>SAS7BDAT</string>
+   </property>
+  </action>
+  <action name="actionReset">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Reset</string>
    </property>
   </action>
  </widget>

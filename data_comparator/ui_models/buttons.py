@@ -17,8 +17,9 @@ from PyQt5.QtPrintSupport import *
 from PyQt5 import uic
 
 from .utilities import FileLoader
+from .tables import InputParamsTableModel
 
-UI_DIR = Path(__file__).parent / "ui"
+UI_DIR = Path(__file__).parent.parent / "ui"
 DETAIL_DLG_DIR = str(UI_DIR / "data_detail_dialog.ui")
 INPUT_PARAMS_DLG_DIR = str(UI_DIR / "input_parameters_dialog.ui")
 ACCEPTED_INPUT_FORMATS = ["sas7bdat", "csv", "parquet", "json"]
@@ -151,11 +152,6 @@ class InputParametersButton(QPushButton):
         DETAIL_DLG_DIR.exec_()
 
 
-class OpenConfigButton(QPushButton):
-    def __init__(self, button):
-        super(QPushButton, self).__init__()
-
-
 class ValidationButton(QPushButton):
     def __init__(self, button):
         super(QPushButton, self).__init__()
@@ -183,6 +179,14 @@ class RemoveInputParamButton(QPushButton):
         self.button = button
         self.parent = parent
         self.button.clicked.connect(self.parent.remove_input_parameter)
+
+
+class ExportButton(QPushButton):
+    def __init__(self, button, parent=None):
+        super(QPushButton, self).__init__()
+        self.button = button
+        self.parent = parent
+        self.button.clicked.connect(self.parent.export_html_report)
 
 
 class ResetButton(QPushButton):
@@ -324,7 +328,7 @@ class LineEditDelegate(QItemDelegate):
                 value.split(",")
             except AttributeError:
                 LOGGER.error(
-                    "Must provide fields in the follwing form: field1, field2, ...")
+                    "Must provide fields in the following form: field1, field2, ...")
                 return False
             return True
 

@@ -29,7 +29,7 @@ from matplotlib.backends.backend_qt5agg import (
 import data_comparator.data_comparator as dc
 from .utilities import FileLoader
 
-UI_DIR = Path(__file__).parent / "ui"
+UI_DIR = Path(__file__).parent.parent / "ui"
 DETAIL_DLG_DIR = str(UI_DIR / "data_detail_dialog.ui")
 INPUT_PARAMS_DLG_DIR = str(UI_DIR / "input_parameters_dialog.ui")
 ACCEPTED_INPUT_FORMATS = ["sas7bdat", "csv", "parquet", "json"]
@@ -59,11 +59,16 @@ class DatasetColumnsListModel(QAbstractListModel, FileLoader):
         self.cols = ["====="]
         self.filename = None
         if dataset != None:
-            self.cols = self.cols + list(dataset.columns.keys())
+            self.cols = self.cols + list(sorted(dataset.columns.keys()))
             self.dataset = dataset
             self.filename = dataset.path
         else:
             self.dataset = None
+    
+    def reset(self):
+        self.cols = ["====="]
+        self.filename = None
+        self.dataset = None
         
     def canDropMimeData(self, data: 'QMimeData', action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
         filename = data.urls()[0].toLocalFile()
