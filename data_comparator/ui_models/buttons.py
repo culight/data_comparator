@@ -41,10 +41,7 @@ LOGGER = logging.getLogger(__name__)
 
 class SelectFileButton(QPushButton, FileLoader):
     def __init__(self, button, ds_num, parent):
-        super(SelectFileButton, self).__init__(
-            ds_num=ds_num,
-            parent_fileloader=parent
-        )
+        super(SelectFileButton, self).__init__(ds_num=ds_num, parent_fileloader=parent)
         self.btn = button
         self.btn.clicked.connect(self.getFile)
         self.dataset = None
@@ -86,45 +83,43 @@ class ColumnSelectButton(QPushButton):
 
 
 class DataDetailDialog(QDialog):
-        def __init__(self, dataset):
-            super(DataDetailDialog, self).__init__()
-            uic.loadUi(DETAIL_DLG_DIR, self)
+    def __init__(self, dataset):
+        super(DataDetailDialog, self).__init__()
+        uic.loadUi(DETAIL_DLG_DIR, self)
 
-            self.detailDialogTable.horizontalHeader().setSectionResizeMode(
-                QHeaderView.Interactive
-            )
+        self.detailDialogTable.horizontalHeader().setSectionResizeMode(
+            QHeaderView.Interactive
+        )
 
-            entries = dataset.get_summary()
-            entries.pop("columns")
-            entries = self.get_coltypes(dataset, entries)
-            self.detailDialogTable.setRowCount(len(entries))
-            self.detailDialogTable.setColumnCount(2)
-            for index, (detail_name, detail_val) in enumerate(entries.items()):
-                self.detailDialogTable.setItem(
-                    index, 0, QTableWidgetItem(str(detail_name)))
-                self.detailDialogTable.setItem(
-                    index, 1, QTableWidgetItem(str(detail_val)))
-            self.detailDialogTable.move(0, 0)
+        entries = dataset.get_summary()
+        entries.pop("columns")
+        entries = self.get_coltypes(dataset, entries)
+        self.detailDialogTable.setRowCount(len(entries))
+        self.detailDialogTable.setColumnCount(2)
+        for index, (detail_name, detail_val) in enumerate(entries.items()):
+            self.detailDialogTable.setItem(index, 0, QTableWidgetItem(str(detail_name)))
+            self.detailDialogTable.setItem(index, 1, QTableWidgetItem(str(detail_val)))
+        self.detailDialogTable.move(0, 0)
 
-        def get_coltypes(self, dataset, entries):
-            col_type_template = {
-                "string_columns": ["object", "str", "o"],
-                "numeric_columns": ["number", "n", "int"],
-                "time_columns": ["time", "datetime", "date", "t"],
-                "boolean_columns": ["bool", "b"],
-            }
-            for col_type, type_names in col_type_template.items():
-                for type_name in type_names:
-                    columns = dataset.get_cols_oftype(type_name).values()
-                    if len(columns) == 0:
-                        continue
-                    ds_names = [col.name for col in columns]
-                    if col_type in entries:
-                        entries[col_type].append(ds_names)
-                    else:
-                        entries[col_type] = ds_names
+    def get_coltypes(self, dataset, entries):
+        col_type_template = {
+            "string_columns": ["object", "str", "o"],
+            "numeric_columns": ["number", "n", "int"],
+            "time_columns": ["time", "datetime", "date", "t"],
+            "boolean_columns": ["bool", "b"],
+        }
+        for col_type, type_names in col_type_template.items():
+            for type_name in type_names:
+                columns = dataset.get_cols_oftype(type_name).values()
+                if len(columns) == 0:
+                    continue
+                ds_names = [col.name for col in columns]
+                if col_type in entries:
+                    entries[col_type].append(ds_names)
+                else:
+                    entries[col_type] = ds_names
 
-            return entries
+        return entries
 
 
 class DatasetDetailsButton(QPushButton):
@@ -138,7 +133,7 @@ class DatasetDetailsButton(QPushButton):
         if self.dataset != None:
             DETAIL_DLG_DIR = DataDetailDialog(self.dataset)
             DETAIL_DLG_DIR.exec_()
-    
+
 
 class InputParametersButton(QPushButton):
     def __init__(self, button, num):
@@ -162,7 +157,7 @@ class CompareButton(QPushButton):
         super(QPushButton, self).__init__()
         self.button = button
         self.parent = parent
-        self.button.clicked.connect(self.compare)
+        self.button.clicked.connect(self.parent.compare)
 
 
 class AddInputParamButton(QPushButton):
@@ -210,10 +205,8 @@ class DataDetailDialog(QDialog):
         self.detailDialogTable.setRowCount(len(entries))
         self.detailDialogTable.setColumnCount(2)
         for index, (detail_name, detail_val) in enumerate(entries.items()):
-            self.detailDialogTable.setItem(
-                index, 0, QTableWidgetItem(str(detail_name)))
-            self.detailDialogTable.setItem(
-                index, 1, QTableWidgetItem(str(detail_val)))
+            self.detailDialogTable.setItem(index, 0, QTableWidgetItem(str(detail_name)))
+            self.detailDialogTable.setItem(index, 1, QTableWidgetItem(str(detail_val)))
         self.detailDialogTable.move(0, 0)
 
     def get_coltypes(self, dataset, entries):
@@ -243,7 +236,7 @@ class InputParametersDialog(QDialog):
         uic.loadUi(INPUT_PARAMS_DLG_DIR, self)
 
         # set the initial value
-        self.input_params = [['', '']]
+        self.input_params = [["", ""]]
         self.num = num
         self.restoreSettings()
 
@@ -252,27 +245,23 @@ class InputParametersDialog(QDialog):
 
         # set input parameter buttons
         self.add_one_button = AddInputParamButton(self.addParamButton, self)
-        self.add_all_button = RemoveInputParamButton(
-            self.removeParamButton, self)
+        self.add_all_button = RemoveInputParamButton(self.removeParamButton, self)
 
     def setup_table(self):
         self.inputParamsTableModel = InputParamsTableModel(self.input_params)
         self.inputParametersTable.setModel(self.inputParamsTableModel)
-        nameLineEdit = LineEditDelegate(self, 'name')
+        nameLineEdit = LineEditDelegate(self, "name")
         nameLineEdit.cellEditingStarted.connect(self.getUpdatedData)
-        self.inputParametersTable.setItemDelegateForColumn(
-            0, nameLineEdit)
-        valueLineEdit = LineEditDelegate(self, 'value')
+        self.inputParametersTable.setItemDelegateForColumn(0, nameLineEdit)
+        valueLineEdit = LineEditDelegate(self, "value")
         valueLineEdit.cellEditingStarted.connect(self.getUpdatedData)
-        self.inputParametersTable.setItemDelegateForColumn(
-            1, valueLineEdit)
+        self.inputParametersTable.setItemDelegateForColumn(1, valueLineEdit)
         self.inputParametersTable.resizeColumnToContents(1)
         self.inputParametersTable.horizontalHeader().setStretchLastSection(True)
 
     def add_input_parameter(self):
         # don't create new rows until values are added
-        self.input_params.append(
-            ['', ''])
+        self.input_params.append(["", ""])
         self.inputParametersTable.model().layoutChanged.emit()
 
     def remove_input_parameter(self):
@@ -284,7 +273,7 @@ class InputParametersDialog(QDialog):
 
         for index in sorted(comp_indices):
             if len(self.input_params) == 1:
-                self.input_params = [['', '']]
+                self.input_params = [["", ""]]
                 self.setup_table()
                 return
             else:
@@ -296,16 +285,17 @@ class InputParametersDialog(QDialog):
         self.saveSettings()
 
     def saveSettings(self):
-        settings = QSettings('myorg', 'myapp' + str(self.num))
-        settings.setValue('params', self.input_params)
+        settings = QSettings("myorg", "myapp" + str(self.num))
+        settings.setValue("params", self.input_params)
 
     def restoreSettings(self):
-        settings = QSettings('myorg', 'myapp' + str(self.num))
-        self.input_params = settings.value('params', self.input_params)
+        settings = QSettings("myorg", "myapp" + str(self.num))
+        self.input_params = settings.value("params", self.input_params)
 
     def closeEvent(self, event):
         self.saveSettings()
         super(InputParametersDialog, self).closeEvent(event)
+
 
 class LineEditDelegate(QItemDelegate):
     cellEditingStarted = pyqtSignal(int, int, str)
@@ -316,19 +306,20 @@ class LineEditDelegate(QItemDelegate):
 
     def _is_valid(self, value):
         # for config table
-        if self.setting == 'value':
+        if self.setting == "value":
             try:
                 float(value)
             except ValueError:
                 LOGGER.error("Value must be numeric")
                 return False
             return True
-        elif self.setting == 'field':
+        elif self.setting == "field":
             try:
                 value.split(",")
             except AttributeError:
                 LOGGER.error(
-                    "Must provide fields in the following form: field1, field2, ...")
+                    "Must provide fields in the following form: field1, field2, ..."
+                )
                 return False
             return True
 

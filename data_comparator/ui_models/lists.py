@@ -22,9 +22,7 @@ from PyQt5 import uic
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import (
-    FigureCanvasQTAgg,
-)
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 
 import data_comparator.data_comparator as dc
 from .utilities import FileLoader
@@ -52,9 +50,7 @@ LOGGER = logging.getLogger(__name__)
 class DatasetColumnsListModel(QAbstractListModel, FileLoader):
     def __init__(self, dataset=None, ds_num=None, parent=None):
         super(DatasetColumnsListModel, self).__init__(
-            dataset=dataset,
-            ds_num=ds_num,
-            parent_fileloader=parent
+            dataset=dataset, ds_num=ds_num, parent_fileloader=parent
         )
         self.cols = ["====="]
         self.filename = None
@@ -64,13 +60,20 @@ class DatasetColumnsListModel(QAbstractListModel, FileLoader):
             self.filename = dataset.path
         else:
             self.dataset = None
-    
+
     def reset(self):
         self.cols = ["====="]
         self.filename = None
         self.dataset = None
-        
-    def canDropMimeData(self, data: 'QMimeData', action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
+
+    def canDropMimeData(
+        self,
+        data: "QMimeData",
+        action: Qt.DropAction,
+        row: int,
+        column: int,
+        parent: QModelIndex,
+    ) -> bool:
         filename = data.urls()[0].toLocalFile()
         if str(filename) == str(self.filename):
             return super().canDropMimeData(data, action, row, column, parent)
@@ -84,7 +87,14 @@ class DatasetColumnsListModel(QAbstractListModel, FileLoader):
         self._load_data(fname=self.filename)
         return super().canDropMimeData(data, action, row, column, parent)
 
-    def dropMimeData(self, data: 'QMimeData', action: Qt.DropAction, row: int, column: int, parent: QModelIndex) -> bool:
+    def dropMimeData(
+        self,
+        data: "QMimeData",
+        action: Qt.DropAction,
+        row: int,
+        column: int,
+        parent: QModelIndex,
+    ) -> bool:
         return super().dropMimeData(data, action, row, column, parent)
 
     def mimeTypes(self) -> typing.List[str]:
