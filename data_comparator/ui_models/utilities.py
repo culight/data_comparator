@@ -23,7 +23,7 @@ from matplotlib.backends.backend_qt5agg import (
 
 import data_comparator.data_comparator as dc
 
-UI_DIR = Path(__file__).parent / "ui"
+UI_DIR = Path(__file__).parent.parent / "ui"
 DETAIL_DLG_DIR = str(UI_DIR / "data_detail_dialog.ui")
 INPUT_PARAMS_DLG_DIR = str(UI_DIR / "input_parameters_dialog.ui")
 ACCEPTED_INPUT_FORMATS = ["sas7bdat", "csv", "parquet", "json"]
