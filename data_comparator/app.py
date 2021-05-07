@@ -12,15 +12,13 @@ import sys
 import logging
 import json
 from pathlib import Path
-import datetime
+import time
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtPrintSupport import *
 from PyQt5 import uic
-
-import pandas as pd
 
 from data_comparator import data_comparator as dc
 from .ui_models.utilities import *
@@ -81,7 +79,7 @@ class MenuBar(QMenuBar):
                 LOGGER.error("Cannot export - no comparison was found")
 
         def get_filepath(self):
-            current_time = datetime.datetime.now()
+            current_time = time.time()
             file_diag = QFileDialog()
             fname, _ = file_diag.getSaveFileName(
                 self.parent,
@@ -91,7 +89,6 @@ class MenuBar(QMenuBar):
             )
             folder_path = Path(fname.replace("." + self.export_type, ""))
             folder_path.mkdir(parents=True, exist_ok=True)
-            LOGGER.info("Saved file path: {}".format(folder_path))
             return folder_path
 
     def new(self):
@@ -170,27 +167,14 @@ class MenuBar(QMenuBar):
             for comp_name, comp in parquet_file.comparisons.items():
                 comp_name_ext = comp_name + ".parquet"
                 file_name = file_path / comp_name_ext
+
+                df = comp.dataframe
+                for col in df.columns:
+                    df[col] = df[col].astype(str)
+                LOGGER.info("Saved file path: {}".format(file_name))
                 comp.dataframe.to_parquet(file_name)
         except Exception as e:
             LOGGER.error(str(e))
-
-    # def export_to_sas(self):
-    #     """
-    #     Export the comparison table to sas7bdat
-    #     """
-    #     try:
-    #         self.comparisons = dc.get_comparisons()
-    #         assert len(self.comparisons) > 0
-    #     except AssertionError:
-    #         LOGGER.error("Cannot export - no comparison was found")
-    #     else:
-    #         sas_file = self.ExportFile(
-    #             comparisons=self.comparisons, export_type="sas7bdat"
-    #         )
-    #         try:
-    #             sas_file.save_file()
-    #         except Exception as e:
-    #             LOGGER.error(str(e))
 
     def export_to_json(self):
         """
