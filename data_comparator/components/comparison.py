@@ -40,8 +40,7 @@ class Comparison:
                     col1.name, col1.data_type, col2.name, col2.data_type
                 )
             )
-        LOGGER.info("Comparing '{}' and '{}'... ".format(
-            col1.name, col2.name))
+        LOGGER.info("Comparing '{}' and '{}'... ".format(col1.name, col2.name))
 
         self.col1 = col1
         self.col2 = col2
@@ -73,19 +72,14 @@ class Comparison:
 
     def create_diff_column(self, checks_added: bool = False):
         try:
-            assert (
-                self.col1 and self.col2
-            )
+            assert self.col1 and self.col2
         except Exception as err:
-            LOGGER.exception(
-                "Two columns must be provided to create diff column")
+            LOGGER.exception("Two columns must be provided to create diff column")
             raise err
 
         if checks_added:
-            measures1 = {**self.col1.get_summary(), **
-                         self.col1.perform_check()}
-            measures2 = {**self.col2.get_summary(), **
-                         self.col2.perform_check()}
+            measures1 = {**self.col1.get_summary(), **self.col1.perform_check()}
+            measures2 = {**self.col2.get_summary(), **self.col2.perform_check()}
             keys = list(self.col1.get_summary().keys()) + list(
                 self.col1.perform_check().keys()
             )

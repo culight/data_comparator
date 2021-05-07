@@ -51,13 +51,12 @@ def load_dataset(data_source, data_source_name: str = "", **load_params):
         dataset_index = len(datasets)
         src_name = "dataset_" + str(dataset_index)
 
-    LOGGER.info(
-        "\nCreating dataset '{}' from source:\n '{}'".format(src_name, src))
+    LOGGER.info("\nCreating dataset '{}' from source:\n '{}'".format(src_name, src))
 
     dataset = Dataset(data_src=src, name=src_name, **load_params)
     DATA_CUPBOARD.write_data("dataset", src_name, dataset)
 
-    LOGGER.info('Done loading dataset {}'.format(src_name))
+    LOGGER.info("Done loading dataset {}".format(src_name))
 
     return dataset
 
@@ -202,10 +201,8 @@ def _get_compare_df(
     """
     col1 = comp.col1
     col2 = comp.col2
-    col1_values = list(col1.get_summary().values()) + \
-        list(col1_checks.values())
-    col2_values = list(col2.get_summary().values()) + \
-        list(col2_checks.values())
+    col1_values = list(col1.get_summary().values()) + list(col1_checks.values())
+    col2_values = list(col2.get_summary().values()) + list(col2_checks.values())
     col_keys = list(col1.get_summary().keys()) + list(col1_checks.keys())
 
     assert len(col1_values) == len(
@@ -222,8 +219,7 @@ def _get_compare_df(
         col2_name = comp.col2.name
 
     if add_diff_col:
-        checks_added = (len(col1_checks) == len(
-            col2_checks)) and (len(col1_checks) > 0)
+        checks_added = (len(col1_checks) == len(col2_checks)) and (len(col1_checks) > 0)
         data = {
             col1_name: col1_values,
             col2_name: col2_values,
@@ -274,8 +270,7 @@ def compare(
     ds1, ds2 = load_datasets(
         data_source1,
         data_source2,
-        data_source_names=[ds_name1, ds_name2] if (
-            ds_name1 or ds_name2) else None,
+        data_source_names=[ds_name1, ds_name2] if (ds_name1 or ds_name2) else None,
         load_params_list=[{}, {}],
     )
 

@@ -316,8 +316,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>476</width>
-         <height>442</height>
+         <width>479</width>
+         <height>373</height>
         </rect>
        </property>
        <attribute name="label">
@@ -415,13 +415,6 @@
                       </widget>
                      </item>
                      <item row="1" column="0">
-                      <widget class="QPushButton" name="openConfigButton">
-                       <property name="text">
-                        <string>Open Config File</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="2" column="0">
                       <widget class="QTableView" name="configTable">
                        <property name="sizeAdjustPolicy">
                         <enum>QAbstractScrollArea::AdjustIgnored</enum>
@@ -450,12 +443,12 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="resetButton">
+                  <widget class="QPushButton" name="exportButton">
                    <property name="enabled">
                     <bool>false</bool>
                    </property>
                    <property name="text">
-                    <string>Reset</string>
+                    <string>Export To HTML</string>
                    </property>
                   </widget>
                  </item>
@@ -642,22 +635,16 @@
     <property name="title">
      <string>File</string>
     </property>
-    <widget class="QMenu" name="menuRecent">
-     <property name="title">
-      <string>Recent</string>
-     </property>
-     <addaction name="separator"/>
-    </widget>
     <widget class="QMenu" name="menuExport">
      <property name="title">
-      <string>Export</string>
+      <string>Export To</string>
      </property>
-     <addaction name="actionPDF"/>
-     <addaction name="actionHTML"/>
      <addaction name="actionCSV"/>
+     <addaction name="actionParquet"/>
+     <addaction name="actionJSON"/>
     </widget>
     <addaction name="actionNew"/>
-    <addaction name="menuRecent"/>
+    <addaction name="actionReset"/>
     <addaction name="separator"/>
     <addaction name="menuExport"/>
     <addaction name="separator"/>
@@ -682,6 +669,9 @@
    <addaction name="menuHelp"/>
   </widget>
   <action name="actionNew">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>New</string>
    </property>
@@ -745,6 +735,30 @@
   <action name="actionDocumentation">
    <property name="text">
     <string>Documentation</string>
+   </property>
+  </action>
+  <action name="actionParquet">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Parquet</string>
+   </property>
+  </action>
+  <action name="actionJSON">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>JSON</string>
+   </property>
+  </action>
+  <action name="actionReset">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Reset</string>
    </property>
   </action>
  </widget>

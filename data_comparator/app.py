@@ -7,9 +7,12 @@
 ### DEVELOPER NOTES: To run this in parent directory - Enter "Make run" in console
 """
 
+from os import mkdir
 import sys
 import logging
 import json
+from pathlib import Path
+import time
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -17,10 +20,12 @@ from PyQt5.QtCore import *
 from PyQt5.QtPrintSupport import *
 from PyQt5 import uic
 
-from pathlib import Path
-
-from .view_models import *
 from data_comparator import data_comparator as dc
+from .ui_models.utilities import *
+from .ui_models.buttons import *
+from .ui_models.tables import *
+from .ui_models.lists import *
+from .ui_models.combo_boxes import *
 
 UI_DIR = Path(__file__).parent / "ui"
 COMP_DIR = Path(__file__).parent / "components"
@@ -42,6 +47,155 @@ LOGGER = logging.getLogger(__name__)
 # =============================================================================
 
 
+class MenuBar(QMenuBar):
+    def __init__(self, menuBar, parent):
+        super(MenuBar, self).__init__()
+        self.parent = parent
+        self.menuBar = menuBar
+        self.comparisons = None
+        self.actionNew = parent.actionNew
+        self.actionReset = parent.actionReset
+        self.actionExit = parent.actionExit
+        self.actionCSV = parent.actionCSV
+        self.actionParquet = parent.actionParquet
+        self.actionJSON = parent.actionJSON
+
+        # self.actionNew.triggered.connect(self.new)
+        self.actionReset.triggered.connect(self.reset)
+        self.actionExit.triggered.connect(self.exit)
+        self.actionCSV.triggered.connect(self.export_to_csv)
+        self.actionParquet.triggered.connect(self.export_to_parquet)
+        self.actionJSON.triggered.connect(self.export_to_json)
+
+    class ExportFile:
+        def __init__(self, export_type, parent):
+            self.comparisons = {}
+            self.export_type = export_type
+            self.parent = parent
+            try:
+                self.comparisons = dc.get_comparisons()
+                assert len(self.comparisons) > 0
+            except AssertionError:
+                LOGGER.error("Cannot export - no comparison was found")
+
+        def get_filepath(self):
+            current_time = time.time()
+            file_diag = QFileDialog()
+            fname, _ = file_diag.getSaveFileName(
+                self.parent,
+                "QFileDialog.getSaveFileName()",
+                str(current_time),
+                "Data Files (*.{})".format(self.export_type),
+            )
+            folder_path = Path(fname.replace("." + self.export_type, ""))
+            folder_path.mkdir(parents=True, exist_ok=True)
+            return folder_path
+
+    def new(self):
+        """
+        Create new comparator
+        """
+        confirm_dialog = QMessageBox.question(
+            self.parent,
+            "Data Comparator",
+            "A new Data Comparator session will be created",
+            QMessageBox.Cancel | QMessageBox.Ok,
+        )
+
+        if confirm_dialog == QMessageBox.Ok:
+            LOGGER.info("Creating new Comparator window")
+            self.parent.__init__()
+        else:
+            pass
+
+    def reset(self):
+        """
+        Reset the fields
+        """
+        confirm_dialog = QMessageBox.question(
+            self.parent,
+            "Data Comparator",
+            "Currently loaded data will be deleted",
+            QMessageBox.Cancel | QMessageBox.Ok,
+        )
+
+        if confirm_dialog == QMessageBox.Ok:
+            LOGGER.info("Removing currently loaded data")
+            self.parent.clear_comparisons()
+            self.parent.clear_datasets()
+        else:
+            pass
+
+    def exit(self):
+        """
+        exit the program
+        """
+        confirm_dialog = QMessageBox.question(
+            self.parent,
+            "Data Comparator",
+            "Are you sure you want to quit?",
+            QMessageBox.Yes | QMessageBox.No,
+        )
+
+        if confirm_dialog == QMessageBox.Yes:
+            LOGGER.info("Exiting data comparator")
+            sys.exit()
+        else:
+            pass
+
+    def export_to_csv(self):
+        """
+        Export the comparison table to csv
+        """
+        csv_file = self.ExportFile(export_type="csv", parent=self.parent)
+        try:
+            file_path = csv_file.get_filepath()
+            for comp_name, comp in csv_file.comparisons.items():
+                comp_name_ext = comp_name + ".csv"
+                file_name = file_path / comp_name_ext
+                LOGGER.info("Saved file path: {}".format(file_name))
+                comp.dataframe.to_csv(file_name)
+        except Exception as e:
+            LOGGER.error(str(e))
+
+    def export_to_parquet(self):
+        """
+        Export the comparison table to parquet
+        """
+        parquet_file = self.ExportFile(export_type="parquet", parent=self.parent)
+        try:
+            file_path = parquet_file.get_filepath()
+            for comp_name, comp in parquet_file.comparisons.items():
+                comp_name_ext = comp_name + ".parquet"
+                file_name = file_path / comp_name_ext
+
+                df = comp.dataframe
+                for col in df.columns:
+                    df[col] = df[col].astype(str)
+                LOGGER.info("Saved file path: {}".format(file_name))
+                comp.dataframe.to_parquet(file_name)
+        except Exception as e:
+            LOGGER.error(str(e))
+
+    def export_to_json(self):
+        """
+        Export the comparison table to json
+        """
+        json_file = self.ExportFile(export_type="json", parent=self.parent)
+        try:
+            file_path = json_file.get_filepath()
+            for comp_name, comp in json_file.comparisons.items():
+                comp_name_ext = comp_name + ".json"
+                file_name = file_path / comp_name_ext
+                LOGGER.info("Saved file path: {}".format(file_name))
+                json_content = comp.dataframe.to_json(orient="split")
+                json_output = json.loads(json_content)
+                with open(file_name, "w") as f:
+                    json.dump(json_output, f)
+        except Exception as e:
+            LOGGER.error(str(e))
+
+
 class MainWindow(QMainWindow):
     """
     Main QT Window Class
@@ -49,25 +203,31 @@ class MainWindow(QMainWindow):
     Args:
         QMainWindow: QMainWindow parent object
     """
+
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
 
         self.comparisons = []
         self.config_items = []
         self.config_names = []
-        self.isPopulated = {"colList1": False, "colList2": False,
-                            "compList": False, "compTable": False}
+        self.isPopulated = {
+            "colList1": False,
+            "colList2": False,
+            "compList": False,
+            "compTable": False,
+        }
+        self.comp_df = None
 
         uic.loadUi(MAIN_UI_DIR, self)
-        QSettings('myorg', 'myapp1').clear()
-        QSettings('myorg', 'myapp2').clear()
+        QSettings("myorg", "myapp1").clear()
+        QSettings("myorg", "myapp2").clear()
 
         # set up logger
         self.setup_logger()
 
         # set up menu bar
         self.menuBar.setNativeMenuBar(False)
-        self.menuBarModel = MenuBarModel(self.menuBar, self)
+        self.menuBarModel = MenuBar(self.menuBar, self)
 
         # set up dataset columns
         self.dataset1Columns.setAcceptDrops(True)
@@ -87,22 +247,19 @@ class MainWindow(QMainWindow):
 
         # set up config table
         self.config_items = self._read_json()
-        self.config_names = [i['name'].replace(
-            ' ', '_').lower() for i in self.config_items]
+        self.config_names = [
+            i["name"].replace(" ", "_").lower() for i in self.config_items
+        ]
         self.configTableModel = ConfigTableModel(self.config_items)
         self.configTable.setModel(self.configTableModel)
         self.configTable.setItemDelegateForColumn(2, ComboBoxDelegate(self))
-        self.configTable.setItemDelegateForColumn(
-            3, LineEditDelegate(self, 'value'))
-        self.configTable.setItemDelegateForColumn(
-            4, LineEditDelegate(self, 'fields'))
+        self.configTable.setItemDelegateForColumn(3, LineEditDelegate(self, "value"))
+        self.configTable.setItemDelegateForColumn(4, LineEditDelegate(self, "fields"))
         self.configTable.resizeColumnToContents(1)
 
         # set up input parameter table
-        self.ip_button1 = InputParametersButton(
-            self.inputParamsButton1, 1)
-        self.ip_button2 = InputParametersButton(
-            self.inputParamsButton2, 2)
+        self.ip_button1 = InputParametersButton(self.inputParamsButton1, 1)
+        self.ip_button2 = InputParametersButton(self.inputParamsButton2, 2)
 
         # set up column select
         self.remove_one_button = ColumnSelectButton(
@@ -115,10 +272,8 @@ class MainWindow(QMainWindow):
         self.dataset2Columns_model = None
 
         # set column buttons
-        self.add_one_button = ColumnSelectButton(
-            self.addOneButton, "add_one", self)
-        self.add_all_button = ColumnSelectButton(
-            self.addAllButton, "add_all", self)
+        self.add_one_button = ColumnSelectButton(self.addOneButton, "add_one", self)
+        self.add_all_button = ColumnSelectButton(self.addAllButton, "add_all", self)
         self.remove_one_button = ColumnSelectButton(
             self.removeOneButton, "remove_one", self
         )
@@ -146,9 +301,8 @@ class MainWindow(QMainWindow):
         # set up tabs column
         self.comparisonsTabLayout.setCurrentIndex(0)
 
-        # set up compare and `reset` buttons
+        # set up compare and export buttons
         self.compareButton.clicked.connect(self.compare)
-        self.resetButton.clicked.connect(self.reset)
 
         # set up comparison output table
         self.comparisonTable.horizontalHeader().setSectionResizeMode(
@@ -156,6 +310,13 @@ class MainWindow(QMainWindow):
         )
 
         self.show()
+
+    def _menu_options_enabled(self, status):
+        self.actionCSV.setEnabled(status)
+        self.actionParquet.setEnabled(status)
+        self.actionJSON.setEnabled(status)
+        self.actionReset.setEnabled(status)
+        # json
 
     def _is_matching_type(self, col1, col2):
         global DATASET1
@@ -191,21 +352,15 @@ class MainWindow(QMainWindow):
         assert validation_data, LOGGER.error("Validation data not found")
 
         config_items = {
-            'type':
-            {
-                'numeric': {},
-                'string': {},
-                'temporal': {},
-                'boolean': {}
-            }
+            "type": {"numeric": {}, "string": {}, "temporal": {}, "boolean": {}}
         }
         for entry in validation_data:
-            vld_type = entry['type'].lower()
-            vld_name = entry['name'].replace(' ', '_').lower()
-            config_items['type'][vld_type][vld_name] = {
-                'enabled': True if entry['enabled'] == 'True' else False,
-                'value': entry['value'],
-                'fields': entry['fields']
+            vld_type = entry["type"].lower()
+            vld_name = entry["name"].replace(" ", "_").lower()
+            config_items["type"][vld_type][vld_name] = {
+                "enabled": True if entry["enabled"] == "True" else False,
+                "value": entry["value"],
+                "fields": entry["fields"],
             }
 
         with open(VALID_FILE_DIR, "w") as write_file:
@@ -226,9 +381,9 @@ class MainWindow(QMainWindow):
         for val_type, entries in validation_data["type"].items():
             for val_name, val_settings in entries.items():
                 config_dict = {}
-                config_dict["name"] = val_name.replace('_', ' ').title()
+                config_dict["name"] = val_name.replace("_", " ").title()
                 config_dict["type"] = val_type.title()
-                config_dict["enabled"] = 'True' if val_settings["enabled"] else 'False'
+                config_dict["enabled"] = "True" if val_settings["enabled"] else "False"
                 config_dict["value"] = val_settings["value"]
                 config_dict["fields"] = val_settings["fields"]
                 config_items.append(config_dict)
@@ -263,8 +418,7 @@ class MainWindow(QMainWindow):
 
                 plot_model = Plot(self)
                 try:
-                    comp_trimmed = data.loc[:,
-                                            data.columns != "diff_col"].transpose()
+                    comp_trimmed = data.loc[:, data.columns != "diff_col"].transpose()
                     plot_model.ax.axes.bar(
                         x=list(comp_trimmed.index),
                         height=comp_trimmed[row_name].tolist(),
@@ -281,8 +435,7 @@ class MainWindow(QMainWindow):
                     plot_model.setSizePolicy(
                         QSizePolicy.Expanding, QSizePolicy.Expanding
                     )
-                    self.plotsGridLayout.addWidget(
-                        plot_model, row_num, column_num)
+                    self.plotsGridLayout.addWidget(plot_model, row_num, column_num)
                 except Exception as e:
                     LOGGER.error("Encountered an error while adding plot")
                     LOGGER.error(e)
@@ -310,7 +463,7 @@ class MainWindow(QMainWindow):
 
         self.comp_table_model = ComparisonOutputTableModel(profile)
         self.comparisonTable.setModel(self.comp_table_model)
-        self.resetButton.setEnabled(True)
+        self.exportButton.setEnabled(True)
 
         dtype = None
         try:
@@ -328,9 +481,6 @@ class MainWindow(QMainWindow):
         """
         compare datasets of interest
         """
-
-        # start with clean slate
-        self.reset()
 
         # get comparison names
         comp_name = self.comparisonsComboBox.currentText()
@@ -350,85 +500,38 @@ class MainWindow(QMainWindow):
         create_plots_checked = self.createVizCheckbox.isChecked()
 
         # make comparisons
-        comp_df = None
+        self.comp_df = None
         if DATASET1 != None and DATASET2 != None:
             # update validation settings
             self._write_json(self.configTableModel.data)
 
-            comp_df = dc.compare_ds(
+            self.comp_df = dc.compare_ds(
                 col1=DATASET1[col1],
                 col2=DATASET2[col2],
                 perform_check=perform_validations,
                 add_diff_col=add_diff_col,
-                save_comp=False,
+                save_comp=True,
                 compare_by_col=compare_by_col,
             )
 
-            self.comp_table_model = ComparisonOutputTableModel(comp_df)
+            self.comp_table_model = ComparisonOutputTableModel(self.comp_df)
             self.comparisonTable.setModel(self.comp_table_model)
-            self.resetButton.setEnabled(True)
+            self._menu_options_enabled(True)
         else:
             LOGGER.error("Datasets not available to make comparisons")
 
         self._clear_plots()
-        if create_plots_checked and not comp_df.empty:
+        if create_plots_checked and not self.comp_df.empty:
             # remove validation fields
             if perform_validations:
-                cols_to_drop = [col for col in list(
-                    comp_df.index) if col in self.config_names]
+                cols_to_drop = [
+                    col for col in list(self.comp_df.index) if col in self.config_names
+                ]
                 if cols_to_drop:
-                    comp_df = comp_df.drop(cols_to_drop)
-            self.create_plots(comp_df)
+                    self.comp_df = self.comp_df.drop(cols_to_drop)
+            self.create_plots(self.comp_df)
 
         self.comparisonsTabLayout.setCurrentIndex(1)
-    
-    def quit(self):
-        """
-        exit the program
-        """
-        confirm_dialog = QMessageBox.question(
-            self, 
-            "Data Comparator",
-            "Are you sure you want to quit?",
-            QMessageBox.Yes | QMessageBox.No
-        )
-
-        if confirm_dialog == QMessageBox.Yes:
-            LOGGER.info("Exiting data comparator")
-            sys.exit()
-        else:
-            pass
-
-    def reset_all(self):
-        """
-        reset all fields
-        """
-        confirm_dialog = QMessageBox.question(
-            self, 
-            "Data Comparator",
-            "Currently loaded data will be removed.",
-            QMessageBox.Cancel | QMessageBox.Ok
-        )
-
-        if confirm_dialog == QMessageBox.Ok:
-            LOGGER.info("Removing currently loaded data")
-            self.reset()
-            self.clear_comparisons()      
-            self.clear_datasets() 
-            dc.clear_all()
-        else:
-            pass
-        
-    def reset(self):
-        """
-        reset the tables
-        """
-        # clear table
-        self._clear_plots()
-        if self.isPopulated['compTable']:
-            self.comp_table_model.clear()
-        dc.clear_comparisons()
-        self.resetButton.setEnabled(False)
 
     def add_comparison(self):
         colList1_indexes = self.dataset1Columns.selectedIndexes()
@@ -437,8 +540,7 @@ class MainWindow(QMainWindow):
         self.dataset2Columns.clearSelection()
 
         if len(colList1_indexes) < 1 or len(colList2_indexes) < 1:
-            LOGGER.error(
-                "Two columns must be selected in order to create a comparison")
+            LOGGER.error("Two columns must be selected in order to create a comparison")
             return
 
         colList1_index = colList1_indexes[0]
@@ -499,7 +601,10 @@ class MainWindow(QMainWindow):
             col2 = col
             if DATASET1[col1].data_type != DATASET2[col2].data_type:
                 LOGGER.error(
-                    "{} is of type and {} is of type. Could not be compare".format(col1, col2))
+                    "{} is of type and {} is of type. Could not be compare".format(
+                        col1, col2
+                    )
+                )
                 continue
             comp_name = "{}-{}".format(col1, col2)
             if not self._is_novel_comparison(comp_name):
@@ -539,13 +644,17 @@ class MainWindow(QMainWindow):
 
     def clear_datasets(self):
         """
-        remove loade datasets and clear from list view
+        remove loaded datasets and clear from list view
         """
+        self._menu_options_enabled(False)
+        self.comparisonTable.setModel(None)
         if self.dataset1Columns_model:
             self.dataset1Columns_model.reset()
+            self.dataframe1Table.setModel(None)
             self.DATASET1 = None
         if self.dataset2Columns_model:
             self.dataset2Columns_model.reset()
+            self.dataframe2Table.setModel(None)
             self.DATASET2 = None
 
     def clear_comparisons(self):
@@ -603,12 +712,10 @@ class MainWindow(QMainWindow):
             )
             self.dataset1Columns.setModel(self.dataset1Columns_model)
 
-            self.isPopulated["colList1"] = True if len(
-                DATASET1.columns) > 0 else False
+            self.isPopulated["colList1"] = True if len(DATASET1.columns) > 0 else False
 
             # set dataframe table
-            self.dataframe1Table_model = DataframeTableModel(
-                DATASET1.dataframe)
+            self.dataframe1Table_model = DataframeTableModel(DATASET1.dataframe)
             self.dataframe1Table.setModel(self.dataframe1Table_model)
             self.ds_details_button1 = DatasetDetailsButton(
                 self.datasetDetails1Button, dataset
@@ -627,12 +734,10 @@ class MainWindow(QMainWindow):
             )
             self.dataset2Columns.setModel(self.dataset2Columns_model)
 
-            self.isPopulated["colList2"] = True if len(
-                DATASET2.columns) > 0 else False
+            self.isPopulated["colList2"] = True if len(DATASET2.columns) > 0 else False
 
             # set dataframe table
-            self.dataframe2Table_model = DataframeTableModel(
-                DATASET2.dataframe)
+            self.dataframe2Table_model = DataframeTableModel(DATASET2.dataframe)
             self.dataframe2Table.setModel(self.dataframe2Table_model)
             self.ds_details_button2 = DatasetDetailsButton(
                 self.datasetDetails2Button, dataset
@@ -656,7 +761,7 @@ def main(*args, **kwargs):
 
     version = pkg_resources.require("data-comparator")[0].version
     window_title = "Data Comparator" + " - " + version
-    
+
     window = MainWindow()
     window.setWindowTitle(window_title)
     app.exec_()
