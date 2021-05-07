@@ -58,14 +58,14 @@ class MenuBar(QMenuBar):
         self.actionExit = parent.actionExit
         self.actionCSV = parent.actionCSV
         self.actionParquet = parent.actionParquet
-        self.actionSAS = parent.actionsas7bdat
+        self.actionJSON = parent.actionJSON
 
         # self.actionNew.triggered.connect(self.new)
         self.actionReset.triggered.connect(self.reset)
         self.actionExit.triggered.connect(self.exit)
         self.actionCSV.triggered.connect(self.export_to_csv)
         self.actionParquet.triggered.connect(self.export_to_parquet)
-        # self.actionSAS.triggered.connect(self.export_to_sas)
+        self.actionJSON.triggered.connect(self.export_to_json)
 
     class ExportFile:
         def __init__(self, export_type, parent):
@@ -153,6 +153,7 @@ class MenuBar(QMenuBar):
             for comp_name, comp in csv_file.comparisons.items():
                 comp_name_ext = comp_name + ".csv"
                 file_name = file_path / comp_name_ext
+                LOGGER.info("Saved file path: {}".format(file_name))
                 comp.dataframe.to_csv(file_name)
         except Exception as e:
             LOGGER.error(str(e))
@@ -184,11 +185,13 @@ class MenuBar(QMenuBar):
         try:
             file_path = json_file.get_filepath()
             for comp_name, comp in json_file.comparisons.items():
-                comp_name_ext = comp_name + ".parquet"
+                comp_name_ext = comp_name + ".json"
                 file_name = file_path / comp_name_ext
+                LOGGER.info("Saved file path: {}".format(file_name))
                 json_content = comp.dataframe.to_json(orient="split")
-                with open("data.txt", "w") as outfile:
-                    json.dump(json_content, file_name)
+                json_output = json.loads(json_content)
+                with open(file_name, "w") as f:
+                    json.dump(json_output, f)
         except Exception as e:
             LOGGER.error(str(e))
 
@@ -311,7 +314,7 @@ class MainWindow(QMainWindow):
     def _menu_options_enabled(self, status):
         self.actionCSV.setEnabled(status)
         self.actionParquet.setEnabled(status)
-        self.actionsas7bdat.setEnabled(status)
+        self.actionJSON.setEnabled(status)
         self.actionReset.setEnabled(status)
         # json
 

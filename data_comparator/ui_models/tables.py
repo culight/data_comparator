@@ -121,10 +121,10 @@ class ComparisonOutputTableModel(QAbstractTableModel):
             if role == Qt.DisplayRole:
                 return data
             if role == Qt.BackgroundRole and (index.column() == 2):
-                if "-" in str(data):
-                    return QBrush(Qt.red)
-                else:
+                if data in ["same", "NaT"]:
                     return QBrush(Qt.green)
+                else:
+                    return QBrush(Qt.red)
 
         return None
 

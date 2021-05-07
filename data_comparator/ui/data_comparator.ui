@@ -647,7 +647,7 @@
      </property>
      <addaction name="actionCSV"/>
      <addaction name="actionParquet"/>
-     <addaction name="actionsas7bdat"/>
+     <addaction name="actionJSON"/>
     </widget>
     <addaction name="actionNew"/>
     <addaction name="actionReset"/>
@@ -752,12 +752,12 @@
     <string>Parquet</string>
    </property>
   </action>
-  <action name="actionsas7bdat">
+  <action name="actionJSON">
    <property name="enabled">
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>SAS7BDAT</string>
+    <string>JSON</string>
    </property>
   </action>
   <action name="actionReset">
