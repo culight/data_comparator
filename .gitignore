@@ -14,3 +14,9 @@ __pycache__/
 build/
 dist/
 *.egg-info
+
+# ignore data files
+.csv
+.parquet
+.avro
+.sas7bdat
