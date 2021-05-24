@@ -309,7 +309,9 @@ class NumericColumn(Column):
         self.max = raw_column.max()
         self.std = raw_column.std()
         self.mean = raw_column.mean()
-        self.zeros = (raw_column == 0).sum()
+        self.zeros = ((raw_column == 0).sum(),)
+        self.pct_missing = (round(float(self.missing / self.count) * 100, 2),)
+        self.pct_zero = round(float(self.zeros / self.count) * 100, 2)
 
     def get_summary(self) -> dict:
         return {
@@ -317,14 +319,14 @@ class NumericColumn(Column):
             "name": self.name,
             "count": self.count,
             "missing": self.missing,
-            "pct_missing": round(float(self.missing / self.count) * 100, 2),
+            "pct_missing": self.pct_missing,
             "data_type": self.data_type,
             "mean": self.mean,
             "min": self.min,
             "max": self.max,
             "std": self.std,
             "zeros": self.zeros,
-            "pct_zero": round(float(self.zeros / self.count) * 100, 2),
+            "pct_zero": self.pct_zero,
         }
 
     def perform_check(self) -> dict:
