@@ -59,6 +59,7 @@ class MenuBar(QMenuBar):
         self.actionCSV = parent.actionCSV
         self.actionParquet = parent.actionParquet
         self.actionJSON = parent.actionJSON
+        self.actionSwapDatasets = parent.actionSwapDatasets
 
         # self.actionNew.triggered.connect(self.new)
         self.actionReset.triggered.connect(self.reset)
@@ -513,7 +514,7 @@ class MainWindow(QMainWindow):
                 save_comp=True,
                 compare_by_col=compare_by_col,
             )
-
+            
             self.comp_table_model = ComparisonOutputTableModel(self.comp_df)
             self.comparisonTable.setModel(self.comp_table_model)
             self._menu_options_enabled(True)

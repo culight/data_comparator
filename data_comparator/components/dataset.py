@@ -152,17 +152,14 @@ class Dataset(object):
             data = pd.read_csv(str(self.path), **load_params)
         elif self.input_format == "txt":
             if "sep" not in list(load_params.keys()):
-                raise ValueError(
-                    "Please provide a valid delimiter for this text file")
+                raise ValueError("Please provide a valid delimiter for this text file")
             data = pd.read_table(str(self.path), **load_params)
         elif self.input_format == "parquet":
-            data = pd.read_parquet(
-                str(self.path), engine="pyarrow", **load_params)
+            data = pd.read_parquet(str(self.path), engine="pyarrow", **load_params)
         elif self.input_format == "json":
             data = pd.read_json(str(self.path), **load_params)
         else:
-            raise ValueError(
-                "Path type {} not recognized".format(self.input_format))
+            raise ValueError("Path type {} not recognized".format(self.input_format))
         end_time = datetime.now()
         self.load_time = str(end_time - start_time)
         return data
@@ -199,23 +196,18 @@ class Dataset(object):
             LOGGER.debug(raw_col_name)
             raw_column = self.convert_dates(self.dataframe[raw_col_name])
             if re.search(r"(int)", str(raw_column.dtype)):
-                self.columns[raw_col_name] = NumericColumn(
-                    raw_column, self.name)
+                self.columns[raw_col_name] = NumericColumn(raw_column, self.name)
             if re.search(r"(float)", str(raw_column.dtype)):
-                self.columns[raw_col_name] = NumericColumn(
-                    raw_column, self.name)
+                self.columns[raw_col_name] = NumericColumn(raw_column, self.name)
             if (
                 re.search(r"(str)", str(raw_column.dtype))
                 or str(raw_column.dtype) == "object"
             ):
-                self.columns[raw_col_name] = StringColumn(
-                    raw_column, self.name)
+                self.columns[raw_col_name] = StringColumn(raw_column, self.name)
             if re.search(r"(time)", str(raw_column.dtype)):
-                self.columns[raw_col_name] = TemporalColumn(
-                    raw_column, self.name)
+                self.columns[raw_col_name] = TemporalColumn(raw_column, self.name)
             if re.search(r"(bool)", str(raw_column.dtype)):
-                self.columns[raw_col_name] = BooleanColumn(
-                    raw_column, self.name)
+                self.columns[raw_col_name] = BooleanColumn(raw_column, self.name)
 
     def get_summary(self):
         return {
@@ -325,12 +317,14 @@ class NumericColumn(Column):
             "name": self.name,
             "count": self.count,
             "missing": self.missing,
+            "pct_missing": round(float(self.missing / self.count) * 100, 2),
             "data_type": self.data_type,
+            "mean": self.mean,
             "min": self.min,
             "max": self.max,
             "std": self.std,
-            "mean": self.mean,
             "zeros": self.zeros,
+            "pct_zero": round(float(self.zeros / self.count) * 100, 2),
         }
 
     def perform_check(self) -> dict:
