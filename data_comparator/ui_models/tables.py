@@ -124,14 +124,10 @@ class ComparisonOutputTableModel(QAbstractTableModel):
                 if data in ["same", "NaT", "diff"]:
                     return QBrush(Qt.white)
                 else:
-                    try:
-                        if float(data) > 0:
-                            return QBrush(Qt.green)
-                        elif float(data) < 0:
-                            return QBrush(Qt.red)
-                    except:
-                        return QBrush(Qt.white)
-
+                    if "-" in str(data):
+                        return QBrush(Qt.red)
+                    else:
+                        return QBrush(Qt.green)
         return None
 
     def headerData(self, col, orientation, role):
