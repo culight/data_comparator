@@ -34,8 +34,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>476</width>
-         <height>442</height>
+         <width>360</width>
+         <height>484</height>
         </rect>
        </property>
        <attribute name="label">
@@ -316,8 +316,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>479</width>
-         <height>373</height>
+         <width>360</width>
+         <height>484</height>
         </rect>
        </property>
        <attribute name="label">
@@ -628,7 +628,7 @@
      <x>0</x>
      <y>0</y>
      <width>631</width>
-     <height>24</height>
+     <height>18</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -637,7 +637,7 @@
     </property>
     <widget class="QMenu" name="menuExport">
      <property name="title">
-      <string>Export To</string>
+      <string>Export Comparisons To</string>
      </property>
      <addaction name="actionCSV"/>
      <addaction name="actionParquet"/>
@@ -647,6 +647,7 @@
     <addaction name="actionReset"/>
     <addaction name="separator"/>
     <addaction name="menuExport"/>
+    <addaction name="actionExportReport"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -759,6 +760,11 @@
    </property>
    <property name="text">
     <string>Reset</string>
+   </property>
+  </action>
+  <action name="actionExportReport">
+   <property name="text">
+    <string>Export Report</string>
    </property>
   </action>
  </widget>

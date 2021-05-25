@@ -20,6 +20,8 @@ from PyQt5.QtCore import *
 from PyQt5.QtPrintSupport import *
 from PyQt5 import uic
 
+import webbrowser
+
 from data_comparator import data_comparator as dc
 from .ui_models.utilities import *
 from .ui_models.buttons import *
@@ -60,6 +62,7 @@ class MenuBar(QMenuBar):
         self.actionParquet = parent.actionParquet
         self.actionJSON = parent.actionJSON
         self.actionSwapDatasets = parent.actionSwapDatasets
+        self.actionExportReport = parent.actionExportReport
 
         # self.actionNew.triggered.connect(self.new)
         self.actionReset.triggered.connect(self.reset)
@@ -67,6 +70,7 @@ class MenuBar(QMenuBar):
         self.actionCSV.triggered.connect(self.export_to_csv)
         self.actionParquet.triggered.connect(self.export_to_parquet)
         self.actionJSON.triggered.connect(self.export_to_json)
+        self.actionExportReport.triggered.connect(self.export_report)
 
     class ExportFile:
         def __init__(self, export_type, parent):
@@ -195,6 +199,22 @@ class MenuBar(QMenuBar):
                     json.dump(json_output, f)
         except Exception as e:
             LOGGER.error(str(e))
+
+    def export_report(self):
+        """
+        Export custom report to HTML
+        """
+        f = open("helloworld.html", "w")
+
+        message = """<html>
+        <head></head>
+        <body><p>Hello World</p></body>
+        </html>"""
+
+        f.write(message)
+        f.close()
+
+        webbrowser.open_new_tab("helloworld.html")
 
 
 class MainWindow(QMainWindow):
@@ -514,7 +534,7 @@ class MainWindow(QMainWindow):
                 save_comp=True,
                 compare_by_col=compare_by_col,
             )
-            
+
             self.comp_table_model = ComparisonOutputTableModel(self.comp_df)
             self.comparisonTable.setModel(self.comp_table_model)
             self._menu_options_enabled(True)
