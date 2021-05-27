@@ -316,8 +316,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>360</width>
-         <height>484</height>
+         <width>278</width>
+         <height>242</height>
         </rect>
        </property>
        <attribute name="label">
@@ -763,6 +763,9 @@
    </property>
   </action>
   <action name="actionExportReport">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Export Report</string>
    </property>

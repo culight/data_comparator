@@ -78,6 +78,7 @@ class MenuBar(QMenuBar):
             self.export_type = export_type
             self.parent = parent
             try:
+                self.parent.compare_all()
                 self.comparisons = dc.get_comparisons()
                 assert len(self.comparisons) > 0
             except AssertionError:
@@ -92,9 +93,12 @@ class MenuBar(QMenuBar):
                 str(current_time),
                 "Data Files (*.{})".format(self.export_type),
             )
-            folder_path = Path(fname.replace("." + self.export_type, ""))
-            folder_path.mkdir(parents=True, exist_ok=True)
-            return folder_path
+            if self.export_type != "html":
+                output_path = Path(fname.replace("." + self.export_type, ""))
+                output_path.mkdir(parents=True, exist_ok=True)
+            else:
+                output_path = Path(fname)
+            return output_path
 
     def new(self):
         """
@@ -204,17 +208,19 @@ class MenuBar(QMenuBar):
         """
         Export custom report to HTML
         """
-        f = open("helloworld.html", "w")
-
-        message = """<html>
-        <head></head>
-        <body><p>Hello World</p></body>
-        </html>"""
-
-        f.write(message)
-        f.close()
-
-        webbrowser.open_new_tab("helloworld.html")
+        html_file = self.ExportFile(export_type="html", parent=self.parent)
+        try:
+            file_path = html_file.get_filepath()
+            f = open(file_path, "w")
+            message = """<html>
+            <head></head>
+            <body><p>Hello World</p></body>
+            </html>"""
+            f.write(message)
+            f.close()
+            webbrowser.open_new_tab(file_path)
+        except Exception as e:
+            LOGGER.error(str(e))
 
 
 class MainWindow(QMainWindow):
@@ -337,6 +343,7 @@ class MainWindow(QMainWindow):
         self.actionParquet.setEnabled(status)
         self.actionJSON.setEnabled(status)
         self.actionReset.setEnabled(status)
+        self.actionExportReport.setEnabled(status)
         # json
 
     def _is_matching_type(self, col1, col2):
@@ -498,13 +505,17 @@ class MainWindow(QMainWindow):
 
         self.comparisonsTabLayout.setCurrentIndex(1)
 
-    def compare(self):
+    def compare(self, comp_name_external=None):
         """
         compare datasets of interest
         """
 
         # get comparison names
-        comp_name = self.comparisonsComboBox.currentText()
+        comp_name = (
+            comp_name_external
+            if comp_name_external
+            else self.comparisonsComboBox.currentText()
+        )
         col1, col2 = comp_name.split("-")
 
         # is this a profiling combination?
@@ -537,7 +548,7 @@ class MainWindow(QMainWindow):
 
             self.comp_table_model = ComparisonOutputTableModel(self.comp_df)
             self.comparisonTable.setModel(self.comp_table_model)
-            self._menu_options_enabled(True)
+
         else:
             LOGGER.error("Datasets not available to make comparisons")
 
@@ -553,6 +564,13 @@ class MainWindow(QMainWindow):
             self.create_plots(self.comp_df)
 
         self.comparisonsTabLayout.setCurrentIndex(1)
+
+    def compare_all(self):
+        if self.comparisons:
+            for comp in self.comparisons:
+                self.compare(comp[0])
+        else:
+            LOGGER.warn("No comparisons to make")
 
     def add_comparison(self):
         colList1_indexes = self.dataset1Columns.selectedIndexes()
@@ -601,7 +619,7 @@ class MainWindow(QMainWindow):
         if self.isPopulated["compList"]:
             self.remove_one_button.button.setEnabled(True)
             self.remove_all_button.button.setEnabled(True)
-
+            self._menu_options_enabled(True)
         self._update_setup()
 
     def add_comparisons(self):
@@ -640,6 +658,7 @@ class MainWindow(QMainWindow):
             self.remove_one_button.button.setEnabled(True)
             self.remove_all_button.button.setEnabled(True)
             self.add_all_button.button.setEnabled(False)
+            self._menu_options_enabled(True)
 
         self._update_setup()
 
@@ -660,6 +679,7 @@ class MainWindow(QMainWindow):
             self.remove_one_button.button.setEnabled(False)
             self.remove_all_button.button.setEnabled(False)
             self.add_all_button.button.setEnabled(True)
+            self._menu_options_enabled(False)
 
         self._update_setup()
 
@@ -695,6 +715,7 @@ class MainWindow(QMainWindow):
             self.remove_one_button.button.setEnabled(False)
             self.remove_all_button.button.setEnabled(False)
             self.add_all_button.button.setEnabled(True)
+            self._menu_options_enabled(False)
 
         self._update_setup()
 
