@@ -5,18 +5,18 @@
 {% endfor %}
 {% endblock %}
 {% block comparison_tables %}
-{% for comp_name in comp_names %}
+{% for name, comp in comps.items() %}
 <div id="comp{{loop.index}}" class="vert_tabcontent">
     <div class="comparison_table" id="comparison">
         <h3>Comparisons</h3>
         <table class="table" id="comparison">
             <tr>
                 <th>Parameter</th>
-                <th>{{comp_names[0]}}</th>
-                <th>{{comp_names[1]}}</th>
+                <th>A</th>
+                <th>B</th>
                 <th>Δ</th>
             </tr>
-            {% for field, values in comps.items() %}
+            {% for field, values in comp.items() %}
             <tr class="comparison_row">
                 <td class="key-col">{{field}}</td>
                 <td class="val-col">{{values[0]}}</td>
