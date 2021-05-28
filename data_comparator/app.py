@@ -10,6 +10,7 @@
 from os import mkdir
 import sys
 import logging
+from jinja2 import Environment, PackageLoader, select_autoescape
 import json
 from pathlib import Path
 import time
@@ -34,6 +35,7 @@ COMP_DIR = Path(__file__).parent / "components"
 MAIN_UI_DIR = str(UI_DIR / "data_comparator.ui")
 VALID_FILE_DIR = str(COMP_DIR / "validations_config.json")
 NON_PLOT_ROWS = ["ds_name", "name", "data_type"]
+HTML_TEMPLATE = UI_DIR / "template.html"
 
 DATASET1 = None
 DATASET2 = None
@@ -78,8 +80,7 @@ class MenuBar(QMenuBar):
             self.export_type = export_type
             self.parent = parent
             try:
-                self.parent.compare_all()
-                self.comparisons = dc.get_comparisons()
+                self.comparisons = self.parent.compare_all()
                 assert len(self.comparisons) > 0
             except AssertionError:
                 LOGGER.error("Cannot export - no comparison was found")
@@ -208,15 +209,29 @@ class MenuBar(QMenuBar):
         """
         Export custom report to HTML
         """
+        env = Environment(
+            loader=PackageLoader("data_comparator.ui"), autoescape=select_autoescape()
+        )
+        template = env.get_template("template.html")
         html_file = self.ExportFile(export_type="html", parent=self.parent)
         try:
             file_path = html_file.get_filepath()
             f = open(file_path, "w")
-            message = """<html>
-            <head></head>
-            <body><p>Hello World</p></body>
-            </html>"""
-            f.write(message)
+
+            comp_paramters = {}
+            comp_paramters["comp_names"] = html_file.comparisons.keys()
+            for comp_name, comp in html_file.comparisons.items():
+                comp_dict = comp.dataframe.transpose().to_dict()
+                comp_dict_proc = {}
+                for name, value in comp_dict.items():
+                    comp_dict_proc[name] = list(value.values())
+                comp_paramters["comparisions"] = comp_dict_proc
+            html_output = template.render(
+                comp_names=comp_paramters["comp_names"],
+                comps=comp_paramters["comparisions"],
+            )
+            print(html_output)
+            f.write(html_output)
             f.close()
             webbrowser.open_new_tab(file_path)
         except Exception as e:
@@ -566,11 +581,26 @@ class MainWindow(QMainWindow):
         self.comparisonsTabLayout.setCurrentIndex(1)
 
     def compare_all(self):
+        passive_comparisons = {}
         if self.comparisons:
-            for comp in self.comparisons:
-                self.compare(comp[0])
+            cached_comparisons = dc.get_comparisons()
+            for c in self.comparisons:
+                comp_name = c[0]
+                if comp_name not in cached_comparisons:
+                    self.compare(comp_name)
+
+                comp_split = comp_name.split("-")
+                if len(set(comp_split)) == 1:
+                    # both columns have the same name -- use one
+                    comp_name = comp_split[0]
+                comparison = dc.get_comparison(comp_name)
+
+                if comparison:
+                    # only pull cached comparisons currently in list
+                    passive_comparisons[comparison.name] = comparison
         else:
             LOGGER.warn("No comparisons to make")
+        return passive_comparisons
 
     def add_comparison(self):
         colList1_indexes = self.dataset1Columns.selectedIndexes()
