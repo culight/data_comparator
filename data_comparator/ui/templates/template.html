@@ -12,8 +12,8 @@
         <table class="table" id="comparison">
             <tr>
                 <th>Parameter</th>
-                <th>A</th>
-                <th>B</th>
+                <th>{{comp["name"][0]}}</th>
+                <th>{{comp["name"][1]}}</th>
                 <th>Δ</th>
             </tr>
             {% for field, values in comp.items() %}
@@ -24,47 +24,6 @@
                 <td class="val-col">{{values[2]}}</td>
             </tr>
             {% endfor %}
-        </table>
-    </div>
-    <div class="comparison_table" id="validation">
-        <h3>Validations</h3>
-        <table class="table" id="comparison">
-            <tr>
-                <th>Parameter</th>
-                <th>Col A</th>
-                <th>Col B</th>
-                <th>Δ</th>
-            </tr>
-            <tr class="comparison_row">
-                <td class="key-col">Dataset Name</td>
-                <td class="val-col">ds1</td>
-                <td class="val-col">ds2</td>
-                <td class="val-col">same</td>
-            </tr>
-            <tr class="comparison_row">
-                <td class="key-col">Name</td>
-                <td class="val-col">ds1</td>
-                <td class="val-col">ds2</td>
-                <td class="val-col">same</td>
-            </tr>
-            <tr class="comparison_row">
-                <td class="key-col">Count</td>
-                <td class="val-col">ds1</td>
-                <td class="val-col">ds2</td>
-                <td class="val-col">same</td>
-            </tr>
-            <tr class="comparison_row">
-                <td class="key-col">Missing</td>
-                <td class="val-col">ds1</td>
-                <td class="val-col">ds2</td>
-                <td class="val-col">same</td>
-            </tr>
-            <tr class="comparison_row">
-                <td class="key-col">Data Type</td>
-                <td class="val-col">ds1</td>
-                <td class="val-col">ds2</td>
-                <td class="val-col">same</td>
-            </tr>
         </table>
     </div>
 </div>

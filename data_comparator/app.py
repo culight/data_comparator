@@ -36,6 +36,7 @@ MAIN_UI_DIR = str(UI_DIR / "data_comparator.ui")
 VALID_FILE_DIR = str(COMP_DIR / "validations_config.json")
 NON_PLOT_ROWS = ["ds_name", "name", "data_type"]
 HTML_TEMPLATE = UI_DIR / "template.html"
+HTML_VALIDATIONS_TEMPLATE = UI_DIR / "template_validations.html"
 
 DATASET1 = None
 DATASET2 = None
@@ -64,7 +65,7 @@ class MenuBar(QMenuBar):
         self.actionParquet = parent.actionParquet
         self.actionJSON = parent.actionJSON
         self.actionSwapDatasets = parent.actionSwapDatasets
-        self.actionExportReport = parent.actionExportReport
+        self.actionExportHTMLReport = parent.actionExportHTMLReport
 
         # self.actionNew.triggered.connect(self.new)
         self.actionReset.triggered.connect(self.reset)
@@ -72,7 +73,7 @@ class MenuBar(QMenuBar):
         self.actionCSV.triggered.connect(self.export_to_csv)
         self.actionParquet.triggered.connect(self.export_to_parquet)
         self.actionJSON.triggered.connect(self.export_to_json)
-        self.actionExportReport.triggered.connect(self.export_report)
+        self.actionExportHTMLReport.triggered.connect(self.export_report)
 
     class ExportFile:
         def __init__(self, export_type, parent):
@@ -205,15 +206,21 @@ class MenuBar(QMenuBar):
         except Exception as e:
             LOGGER.error(str(e))
 
-    def export_report(self):
+    def export_report(self, validations=False):
         """
         Export custom report to HTML
         """
         env = Environment(
             loader=PackageLoader("data_comparator.ui"), autoescape=select_autoescape()
         )
-        template = env.get_template("template.html")
+
+        if validations:
+            template = env.get_template("template_validations.html")
+            self.parent.performValidationsCheckbox.checked = True
+        else:
+            template = env.get_template("template.html")
         html_file = self.ExportFile(export_type="html", parent=self.parent)
+
         try:
             file_path = html_file.get_filepath()
             f = open(file_path, "w")
@@ -360,7 +367,8 @@ class MainWindow(QMainWindow):
         self.actionParquet.setEnabled(status)
         self.actionJSON.setEnabled(status)
         self.actionReset.setEnabled(status)
-        self.actionExportReport.setEnabled(status)
+        self.actionExportHTML.setEnabled(status)
+        self.actionExportHTMLValidations.setEnabled(status)
         # json
 
     def _is_matching_type(self, col1, col2):

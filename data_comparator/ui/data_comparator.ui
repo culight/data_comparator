@@ -23,6 +23,9 @@
    <layout class="QGridLayout" name="gridLayout_2">
     <item row="0" column="0">
      <widget class="QToolBox" name="mainLayoutToolbox">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>0</horstretch>
@@ -34,8 +37,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>360</width>
-         <height>484</height>
+         <width>476</width>
+         <height>442</height>
         </rect>
        </property>
        <attribute name="label">
@@ -316,8 +319,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>278</width>
-         <height>242</height>
+         <width>490</width>
+         <height>442</height>
         </rect>
        </property>
        <attribute name="label">
@@ -422,6 +425,9 @@
                        <property name="selectionMode">
                         <enum>QAbstractItemView::SingleSelection</enum>
                        </property>
+                       <property name="wordWrap">
+                        <bool>false</bool>
+                       </property>
                       </widget>
                      </item>
                     </layout>
@@ -443,12 +449,12 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="exportButton">
+                  <widget class="QPushButton" name="exportValidations">
                    <property name="enabled">
                     <bool>false</bool>
                    </property>
                    <property name="text">
-                    <string>Export To HTML</string>
+                    <string>Export Validations</string>
                    </property>
                   </widget>
                  </item>
@@ -628,7 +634,7 @@
      <x>0</x>
      <y>0</y>
      <width>631</width>
-     <height>18</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -647,7 +653,7 @@
     <addaction name="actionReset"/>
     <addaction name="separator"/>
     <addaction name="menuExport"/>
-    <addaction name="actionExportReport"/>
+    <addaction name="actionExportHTMLReport"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -762,12 +768,25 @@
     <string>Reset</string>
    </property>
   </action>
-  <action name="actionExportReport">
+  <action name="actionExportHTML">
    <property name="enabled">
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Export Report</string>
+    <string>HTML</string>
+   </property>
+  </action>
+  <action name="actionExportHTMLValidations">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>HTML (w/ validations)</string>
+   </property>
+  </action>
+  <action name="actionExportHTMLReport">
+   <property name="text">
+    <string>Export HTML Report</string>
    </property>
   </action>
  </widget>
