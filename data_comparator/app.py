@@ -66,7 +66,6 @@ class MenuBar(QMenuBar):
         self.actionJSON = parent.actionJSON
         self.actionSwapDatasets = parent.actionSwapDatasets
         self.actionExportHTMLReport = parent.actionExportHTMLReport
-        self.actionIncludeValidations = parent.actionIncludeValidations
 
         # self.actionNew.triggered.connect(self.new)
         self.actionReset.triggered.connect(self.reset)
@@ -355,7 +354,6 @@ class MainWindow(QMainWindow):
 
         # set up compare and export buttons
         self.compareButton.clicked.connect(self.compare)
-        self.exportValidationsButton.clicked.connect(self.export_validations)
 
         # set up comparison output table
         self.comparisonTable.horizontalHeader().setSectionResizeMode(
@@ -496,20 +494,6 @@ class MainWindow(QMainWindow):
                     LOGGER.error(e)
 
                 index += 1
-
-    def export_validations(self):
-        """Export the current validations content"""
-
-        try:
-            config_export_dialog = QMessageBox.about(
-                self.exportValidationsButton,
-                "Data Comparator",
-                "Validations configuration has been exported.",
-            )
-
-        except Exception as e:
-            LOGGER.error("Could not export validations configuration")
-            LOGGER.error(str(e))
 
     def profile(self, col, ds):
         """

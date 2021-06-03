@@ -148,11 +148,9 @@ class InputParametersButton(QPushButton):
 
 
 class ValidationButton(QPushButton):
-    def __init__(self, button, parent=None):
+    def __init__(self, button):
         super(QPushButton, self).__init__()
-        self.button = button
-        self.parent = parent
-        self.button.clicked.connect(self.parent.export_validations)
+
 
 class CompareButton(QPushButton):
     def __init__(self, button, parent=None):
