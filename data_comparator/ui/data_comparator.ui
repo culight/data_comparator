@@ -37,8 +37,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>476</width>
-         <height>442</height>
+         <width>360</width>
+         <height>484</height>
         </rect>
        </property>
        <attribute name="label">
@@ -319,8 +319,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>490</width>
-         <height>442</height>
+         <width>360</width>
+         <height>484</height>
         </rect>
        </property>
        <attribute name="label">
@@ -336,6 +336,67 @@
         <item row="0" column="0">
          <widget class="QFrame" name="dataDetailLayout">
           <layout class="QGridLayout" name="gridLayout_3">
+           <item row="0" column="0">
+            <widget class="QTabWidget" name="datasetDetailsTabLayout">
+             <property name="tabShape">
+              <enum>QTabWidget::Triangular</enum>
+             </property>
+             <property name="currentIndex">
+              <number>0</number>
+             </property>
+             <widget class="QWidget" name="dataset1Tab">
+              <attribute name="title">
+               <string>Dataset 1</string>
+              </attribute>
+              <layout class="QGridLayout" name="gridLayout_6">
+               <item row="0" column="0">
+                <widget class="QPushButton" name="datasetDetails1Button">
+                 <property name="text">
+                  <string>Dataset Details</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QTableView" name="dataframe1Table">
+                 <property name="alternatingRowColors">
+                  <bool>true</bool>
+                 </property>
+                 <property name="sortingEnabled">
+                  <bool>true</bool>
+                 </property>
+                 <attribute name="horizontalHeaderMinimumSectionSize">
+                  <number>60</number>
+                 </attribute>
+                 <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
+                  <bool>false</bool>
+                 </attribute>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QWidget" name="dataset2Tab">
+              <attribute name="title">
+               <string>Dataset 2</string>
+              </attribute>
+              <layout class="QGridLayout" name="gridLayout_5">
+               <item row="0" column="0">
+                <widget class="QPushButton" name="datasetDetails2Button">
+                 <property name="text">
+                  <string>Dataset Details</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QTableView" name="dataframe2Table">
+                 <property name="alternatingRowColors">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </widget>
+           </item>
            <item row="0" column="1">
             <widget class="QTabWidget" name="comparisonsTabLayout">
              <property name="sizePolicy">
@@ -409,28 +470,48 @@
                     </widget>
                    </item>
                    <item>
-                    <layout class="QGridLayout" name="gridLayout_7">
-                     <item row="0" column="0" alignment="Qt::AlignHCenter">
-                      <widget class="QLabel" name="validationConfiguration">
-                       <property name="text">
-                        <string>Validation Configuration:</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="1" column="0">
-                      <widget class="QTableView" name="configTable">
-                       <property name="sizeAdjustPolicy">
-                        <enum>QAbstractScrollArea::AdjustIgnored</enum>
-                       </property>
-                       <property name="selectionMode">
-                        <enum>QAbstractItemView::SingleSelection</enum>
-                       </property>
-                       <property name="wordWrap">
-                        <bool>false</bool>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
+                    <widget class="QWidget" name="validationConfigLayout" native="true">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <layout class="QGridLayout" name="gridLayout_7">
+                      <item row="0" column="0" alignment="Qt::AlignHCenter">
+                       <widget class="QLabel" name="validationConfiguration">
+                        <property name="text">
+                         <string>Validation Configuration:</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item row="1" column="0">
+                       <widget class="QTableView" name="configTable">
+                        <property name="sizePolicy">
+                         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                          <horstretch>0</horstretch>
+                          <verstretch>0</verstretch>
+                         </sizepolicy>
+                        </property>
+                        <property name="maximumSize">
+                         <size>
+                          <width>16777215</width>
+                          <height>16777215</height>
+                         </size>
+                        </property>
+                        <property name="sizeAdjustPolicy">
+                         <enum>QAbstractScrollArea::AdjustIgnored</enum>
+                        </property>
+                        <property name="selectionMode">
+                         <enum>QAbstractItemView::SingleSelection</enum>
+                        </property>
+                        <attribute name="horizontalHeaderMinimumSectionSize">
+                         <number>40</number>
+                        </attribute>
+                       </widget>
+                      </item>
+                     </layout>
+                    </widget>
                    </item>
                   </layout>
                  </item>
@@ -449,9 +530,9 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="exportValidations">
+                  <widget class="QPushButton" name="exportValidationsButton">
                    <property name="enabled">
-                    <bool>false</bool>
+                    <bool>true</bool>
                    </property>
                    <property name="text">
                     <string>Export Validations</string>
@@ -523,67 +604,6 @@
              </widget>
             </widget>
            </item>
-           <item row="0" column="0">
-            <widget class="QTabWidget" name="datasetDetailsTabLayout">
-             <property name="tabShape">
-              <enum>QTabWidget::Triangular</enum>
-             </property>
-             <property name="currentIndex">
-              <number>0</number>
-             </property>
-             <widget class="QWidget" name="dataset1Tab">
-              <attribute name="title">
-               <string>Dataset 1</string>
-              </attribute>
-              <layout class="QGridLayout" name="gridLayout_6">
-               <item row="0" column="0">
-                <widget class="QPushButton" name="datasetDetails1Button">
-                 <property name="text">
-                  <string>Dataset Details</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="0">
-                <widget class="QTableView" name="dataframe1Table">
-                 <property name="alternatingRowColors">
-                  <bool>true</bool>
-                 </property>
-                 <property name="sortingEnabled">
-                  <bool>true</bool>
-                 </property>
-                 <attribute name="horizontalHeaderMinimumSectionSize">
-                  <number>60</number>
-                 </attribute>
-                 <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
-                  <bool>false</bool>
-                 </attribute>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-             <widget class="QWidget" name="dataset2Tab">
-              <attribute name="title">
-               <string>Dataset 2</string>
-              </attribute>
-              <layout class="QGridLayout" name="gridLayout_5">
-               <item row="0" column="0">
-                <widget class="QPushButton" name="datasetDetails2Button">
-                 <property name="text">
-                  <string>Dataset Details</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="0">
-                <widget class="QTableView" name="dataframe2Table">
-                 <property name="alternatingRowColors">
-                  <bool>true</bool>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </widget>
-           </item>
           </layout>
          </widget>
         </item>
@@ -634,7 +654,7 @@
      <x>0</x>
      <y>0</y>
      <width>631</width>
-     <height>24</height>
+     <height>18</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -654,6 +674,7 @@
     <addaction name="separator"/>
     <addaction name="menuExport"/>
     <addaction name="actionExportHTMLReport"/>
+    <addaction name="actionIncludeValidations"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -766,6 +787,14 @@
    </property>
    <property name="text">
     <string>Reset</string>
+   </property>
+  </action>
+  <action name="actionIncludeValidations">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Include Validations</string>
    </property>
   </action>
   <action name="actionExportHTML">
