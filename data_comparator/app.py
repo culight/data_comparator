@@ -35,8 +35,6 @@ COMP_DIR = Path(__file__).parent / "components"
 MAIN_UI_DIR = str(UI_DIR / "data_comparator.ui")
 VALID_FILE_DIR = str(COMP_DIR / "validations_config.json")
 NON_PLOT_ROWS = ["ds_name", "name", "data_type"]
-HTML_TEMPLATE = UI_DIR / "template.html"
-HTML_VALIDATIONS_TEMPLATE = UI_DIR / "template_validations.html"
 
 DATASET1 = None
 DATASET2 = None
@@ -215,11 +213,7 @@ class MenuBar(QMenuBar):
             loader=PackageLoader("data_comparator.ui"), autoescape=select_autoescape()
         )
 
-        if validations:
-            template = env.get_template("template_validations.html")
-            self.parent.performValidationsCheckbox.checked = True
-        else:
-            template = env.get_template("template.html")
+        template = env.get_template("template.html")
         html_file = self.ExportFile(export_type="html", parent=self.parent)
 
         try:
@@ -369,8 +363,8 @@ class MainWindow(QMainWindow):
         self.actionParquet.setEnabled(status)
         self.actionJSON.setEnabled(status)
         self.actionReset.setEnabled(status)
-        self.actionExportHTML.setEnabled(status)
-        self.actionExportHTMLValidations.setEnabled(status)
+        self.actionExportHTMLReport.setEnabled(status)
+        self.actionIncludeValidations.setChecked(status)
         # json
 
     def _is_matching_type(self, col1, col2):
