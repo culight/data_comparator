@@ -35,8 +35,6 @@ COMP_DIR = Path(__file__).parent / "components"
 MAIN_UI_DIR = str(UI_DIR / "data_comparator.ui")
 VALID_FILE_DIR = str(COMP_DIR / "validations_config.json")
 NON_PLOT_ROWS = ["ds_name", "name", "data_type"]
-HTML_TEMPLATE = UI_DIR / "template.html"
-HTML_VALIDATIONS_TEMPLATE = UI_DIR / "template_validations.html"
 
 DATASET1 = None
 DATASET2 = None
@@ -215,11 +213,7 @@ class MenuBar(QMenuBar):
             loader=PackageLoader("data_comparator.ui"), autoescape=select_autoescape()
         )
 
-        if validations:
-            template = env.get_template("template_validations.html")
-            self.parent.performValidationsCheckbox.checked = True
-        else:
-            template = env.get_template("template.html")
+        template = env.get_template("template.html")
         html_file = self.ExportFile(export_type="html", parent=self.parent)
 
         try:
@@ -534,7 +528,7 @@ class MainWindow(QMainWindow):
 
         self.comp_table_model = ComparisonOutputTableModel(profile)
         self.comparisonTable.setModel(self.comp_table_model)
-        self.exportButton.setEnabled(True)
+        self.exportValidationsButton.setEnabled(True)
 
         dtype = None
         try:
@@ -548,11 +542,10 @@ class MainWindow(QMainWindow):
 
         self.comparisonsTabLayout.setCurrentIndex(1)
 
-    def compare(self, comp_name_external=None):
+    def compare(self, comp_name_external=None, validation_for_export=False):
         """
         compare datasets of interest
         """
-
         # get comparison names
         comp_name = (
             comp_name_external
@@ -571,8 +564,11 @@ class MainWindow(QMainWindow):
         # retreive comparison settings
         compare_by_col = col1 == col2
         add_diff_col = self.addDiffCheckbox.isChecked()
-        perform_validations = self.performValidationsCheckbox.isChecked()
         create_plots_checked = self.createVizCheckbox.isChecked()
+        if validation_for_export:
+            perform_validations = True
+        else:
+            perform_validations = self.performValidationsCheckbox.isChecked()
 
         # make comparisons
         self.comp_df = None
@@ -610,12 +606,16 @@ class MainWindow(QMainWindow):
 
     def compare_all(self):
         passive_comparisons = {}
+
         if self.comparisons:
             cached_comparisons = dc.get_comparisons()
             for c in self.comparisons:
                 comp_name = c[0]
                 if comp_name not in cached_comparisons:
-                    self.compare(comp_name)
+                    self.compare(
+                        comp_name,
+                        validation_for_export=self.actionIncludeValidations.isChecked(),
+                    )
 
                 comp_split = comp_name.split("-")
                 if len(set(comp_split)) == 1:
@@ -626,6 +626,7 @@ class MainWindow(QMainWindow):
                 if comparison:
                     # only pull cached comparisons currently in list
                     passive_comparisons[comparison.name] = comparison
+
         else:
             LOGGER.warn("No comparisons to make")
         return passive_comparisons
