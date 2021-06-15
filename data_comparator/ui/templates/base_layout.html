@@ -86,6 +86,7 @@
 
         .vert_tabcontent {
             float: inherit;
+            display: block;
             padding: 0px 12px;
             border: 1px solid #ccc;
             width: 80%;
@@ -157,63 +158,9 @@
             <h2>Summary</h2>
             <div class="tab_layout">
                 <div class="horiz_tab">
-                    <button class="tablinks" onclick="openTab(event, 'colA', 'horiz')">Col A</button>
-                    <button class="tablinks" onclick="openTab(event, 'colB', 'horiz')">Col B</button>
+                    {% block horizontal_tabs %}{% endblock %}
                 </div>
-                <div id="colA" class="horiz_tabcontent">
-                    <div class="summary_table" id="col_details_A">
-                        <h3>Details</h3>
-                        <table class="table" id="summary_details">
-                            <tr>
-                                <th>Parameter</th>
-                                <th>Value</th>
-                            </tr>
-                            <tr>
-                                <td class="key-col">Format</td>
-                                <td class="val-col">.json</td>
-                            </tr>
-                            <tr>
-                                <td class="key-col">Size</td>
-                                <td class="val-col">512 MB</td>
-                            </tr>
-                            <tr>
-                                <td class="key-col">Dataset Name</td>
-                                <td class="val-col">memberA</td>
-                            </tr>
-                            <tr>
-                                <td class="key-col">Load Time</td>
-                                <td class="val-col">0.02s</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-                <div id="colB" class="horiz_tabcontent">
-                    <div class="summary_table" id="col_details_B">
-                        <h3>Details</h3>
-                        <table class="table" id="summary_details" style="width:100%">
-                            <tr>
-                                <th>Parameter</th>
-                                <th>Value</th>
-                            </tr>
-                            <tr>
-                                <td class="key-col">Format</td>
-                                <td class="val-col">.csv</td>
-                            </tr>
-                            <tr>
-                                <td class="key-col">Size</td>
-                                <td class="val-col">512 MB</td>
-                            </tr>
-                            <tr>
-                                <td class="key-col">Dataset Name</td>
-                                <td class="val-col">memberB</td>
-                            </tr>
-                            <tr>
-                                <td class="key-col">Load Time</td>
-                                <td class="val-col">0.02s</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
+                {% block details %}{% endblock %}
             </div>
         </div>
         <div id="comparisons_container" style="flex-grow: 1;">

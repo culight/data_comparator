@@ -218,12 +218,14 @@ class MenuBar(QMenuBar):
 
         try:
             file_path = html_file.get_filepath()
-            f = open(file_path, "w")
+            f = open(file_path, "w", encoding="utf-8")
 
             comp_paramters = {
                 "comp_names": html_file.comparisons.keys(),
                 "comparisons": {},
+                "summary": {},
             }
+
             for comp_name, comp in html_file.comparisons.items():
                 comp_dict = comp.dataframe.transpose().to_dict()
                 comp_dict_proc = {}
@@ -231,10 +233,19 @@ class MenuBar(QMenuBar):
                     comp_dict_proc[name] = list(value.values())
                 comp_paramters["comparisons"][comp_name] = comp_dict_proc
 
+            ds1 = comp_dict_proc["ds_name"][0]
+            ds2 = comp_dict_proc["ds_name"][1]
+            ds1_df = dc.get_dataset(ds1)
+            ds2_df = dc.get_dataset(ds2)
+            comp_paramters["summary"][ds1] = ds1_df.get_summary()
+            comp_paramters["summary"][ds2] = ds2_df.get_summary()
+
             html_output = template.render(
                 comp_names=comp_paramters["comp_names"],
                 comps=comp_paramters["comparisons"],
+                datasets=comp_paramters["summary"],
             )
+            
             f.write(html_output)
             f.close()
             webbrowser.open_new_tab(file_path)
