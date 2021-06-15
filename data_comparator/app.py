@@ -364,14 +364,16 @@ class MainWindow(QMainWindow):
 
         self.show()
 
-    def _menu_options_enabled(self, status):
+    def _active_menu_options_enabled(self, status):
         self.actionCSV.setEnabled(status)
         self.actionParquet.setEnabled(status)
         self.actionJSON.setEnabled(status)
-        self.actionReset.setEnabled(status)
-        self.actionExportHTML.setEnabled(status)
-        self.actionExportHTMLValidations.setEnabled(status)
+        self.actionExportHTMLReport.setEnabled(status)
+        self.actionIncludeValidations.setEnabled(status)
         # json
+
+    def _passive_menu_options_enabled(self, status):
+        self.actionReset.setEnabled(status)
 
     def _is_matching_type(self, col1, col2):
         global DATASET1
@@ -675,7 +677,7 @@ class MainWindow(QMainWindow):
         if self.isPopulated["compList"]:
             self.remove_one_button.button.setEnabled(True)
             self.remove_all_button.button.setEnabled(True)
-            self._menu_options_enabled(True)
+            self._active_menu_options_enabled(True)
         self._update_setup()
 
     def add_comparisons(self):
@@ -714,7 +716,7 @@ class MainWindow(QMainWindow):
             self.remove_one_button.button.setEnabled(True)
             self.remove_all_button.button.setEnabled(True)
             self.add_all_button.button.setEnabled(False)
-            self._menu_options_enabled(True)
+            self._active_menu_options_enabled(True)
 
         self._update_setup()
 
@@ -735,7 +737,7 @@ class MainWindow(QMainWindow):
             self.remove_one_button.button.setEnabled(False)
             self.remove_all_button.button.setEnabled(False)
             self.add_all_button.button.setEnabled(True)
-            self._menu_options_enabled(False)
+            self._active_menu_options_enabled(False)
 
         self._update_setup()
 
@@ -743,7 +745,8 @@ class MainWindow(QMainWindow):
         """
         remove loaded datasets and clear from list view
         """
-        self._menu_options_enabled(False)
+        self._active_menu_options_enabled(False)
+        self._passive_menu_options_enabled(False)
         self.comparisonTable.setModel(None)
         if self.dataset1Columns_model:
             self.dataset1Columns_model.reset()
@@ -771,7 +774,7 @@ class MainWindow(QMainWindow):
             self.remove_one_button.button.setEnabled(False)
             self.remove_all_button.button.setEnabled(False)
             self.add_all_button.button.setEnabled(True)
-            self._menu_options_enabled(False)
+            self._active_menu_options_enabled(False)
 
         self._update_setup()
 
@@ -846,9 +849,11 @@ class MainWindow(QMainWindow):
         if self.isPopulated["colList1"] and self.isPopulated["colList2"]:
             self.add_one_button.button.setEnabled(True)
             self.add_all_button.button.setEnabled(True)
+            self._passive_menu_options_enabled(True)
         else:
             self.add_one_button.button.setEnabled(False)
             self.add_all_button.button.setEnabled(False)
+            self._passive_menu_options_enabled(False)
 
 
 def main(*args, **kwargs):
