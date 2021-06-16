@@ -129,7 +129,7 @@
             for (i = 0; diff_cells.length - 1; i++) {
                 diff = diff_cells[i];
                 text = diff.outerText;
-                if ((text == "diff") | (text == "same")) {
+                if ((text == "diff") | (text == "same") | (text == "NaT")) {
                     continue;
                 } else if (text.includes("-")) {
                     diff.style.backgroundColor = "red";
