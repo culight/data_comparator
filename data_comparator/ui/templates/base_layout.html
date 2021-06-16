@@ -1,0 +1,198 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Data Comparator HTML Report">
+    <meta name="author" content="Demerrick Moton">
+    <meta http-equiv="Cache-control" content="private, max-age=600">
+
+    <style>
+        h2,
+        h3 {
+            text-align: center;
+        }
+
+        /* Style the tab */
+        .horiz_tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+        }
+
+        .vert_tab {
+            float: left;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            width: 20%;
+            height: inherit;
+            overflow-x: auto;
+        }
+
+        .tab_layout {
+            height: 100%;
+        }
+
+        /* Style the buttons that are used to open the tab content */
+        .horiz_tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+        }
+
+        .vert_tab button {
+            display: block;
+            background-color: inherit;
+            color: black;
+            padding: 22px 16px;
+            width: 100%;
+            border: none;
+            outline: none;
+            text-align: left;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        /* Change background color of buttons on hover */
+        .horiz_tab button:hover {
+            background-color: #ddd;
+        }
+
+        .vert_tab button:hover {
+            background-color: #ddd;
+        }
+
+        /* Create an active/current tablink class */
+        .horiz_tab button.active {
+            background-color: #ccc;
+        }
+
+        .vert_tab button.active {
+            background-color: #ccc;
+        }
+
+
+        /* Style the tab content */
+        .horiz_tabcontent {
+            display: none;
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            border-top: none;
+            height: inherit;
+        }
+
+        .vert_tabcontent {
+            float: inherit;
+            display: block;
+            padding: 0px 12px;
+            border: 1px solid #ccc;
+            width: auto;
+            border-left: none;
+            height: inherit;
+        }
+
+        /* Style the tables */
+        table,
+        th,
+        td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 15px;
+        }
+
+        table {
+            border-spacing: 5px;
+            width: 100%;
+        }
+
+        .key-col {
+            background-color: #f1f1f1;
+        }
+
+        .comparison_table {
+            padding: 0px 12px;
+            overflow: auto;
+            padding-bottom: 12px;
+        }
+
+        #summary-tab-layout {
+            overflow-wrap: anywhere;
+        }
+    </style>
+
+    <script>
+        function initSetup(evt, text) {
+            diff_cells = document.getElementsByClassName("diff");
+            for (i = 0; diff_cells.length - 1; i++) {
+                diff = diff_cells[i];
+                text = diff.outerText;
+                if ((text == "diff") | (text == "same") | (text == "NaT")) {
+                    continue;
+                } else if (text.includes("-")) {
+                    diff.style.backgroundColor = "red";
+                } else {
+                    diff.style.backgroundColor = "green";
+                }
+            }
+        }
+
+        function openTab(evt, tabName, orientation) {
+            // Declare all variables
+            var i, tabcontent, tablinks;
+
+            // Get all elements with class="tabcontent" and hide them
+            tabcontent_orien = orientation + "_tabcontent"
+            tabcontent = document.getElementsByClassName(tabcontent_orien);
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // Get all elements with class="tablinks" and remove the class "active"
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+
+            activeTab = document.getElementsByClassName("tablinks active");
+            compName = activeTab[0].innerText
+
+        }
+    </script>
+</head>
+
+<body onload="initSetup()">
+    <div class="container" style="display: flex; height: 100%;">
+        <div id="summary_container" style="width: 30%; height: 100%;">
+            <h2>Summary</h2>
+            <div class="tab_layout" id="summary-tab-layout">
+                <div class="horiz_tab">
+                    {% block horizontal_tabs %}{% endblock %}
+                </div>
+                {% block details %}{% endblock %}
+            </div>
+        </div>
+        <div id="comparisons_container" style="flex-grow: 1;">
+            <h2>Comparisons</h2>
+            <div class="tab_layout" id="comparisons-tab-layout">
+                <div class="vert_tab">
+                    {% block vertical_tabs %}{% endblock %}
+                </div>
+                {% block comparison_tables %}{% endblock %}
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
