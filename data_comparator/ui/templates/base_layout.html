@@ -26,6 +26,7 @@
             background-color: #f1f1f1;
             width: 20%;
             height: inherit;
+            overflow-x: auto;
         }
 
         .tab_layout {
@@ -81,7 +82,7 @@
             padding: 6px 12px;
             border: 1px solid #ccc;
             border-top: none;
-            height: 100%;
+            height: inherit;
         }
 
         .vert_tabcontent {
@@ -89,9 +90,9 @@
             display: block;
             padding: 0px 12px;
             border: 1px solid #ccc;
-            width: 80%;
+            width: auto;
             border-left: none;
-            height: 100%;
+            height: inherit;
         }
 
         /* Style the tables */
@@ -120,6 +121,10 @@
             padding: 0px 12px;
             overflow: auto;
             padding-bottom: 12px;
+        }
+
+        #summary-tab-layout {
+            overflow-wrap: anywhere;
         }
     </style>
 
@@ -171,7 +176,7 @@
     <div class="container" style="display: flex; height: 100%;">
         <div id="summary_container" style="width: 30%; height: 100%;">
             <h2>Summary</h2>
-            <div class="tab_layout">
+            <div class="tab_layout" id="summary-tab-layout">
                 <div class="horiz_tab">
                     {% block horizontal_tabs %}{% endblock %}
                 </div>
@@ -180,7 +185,7 @@
         </div>
         <div id="comparisons_container" style="flex-grow: 1;">
             <h2>Comparisons</h2>
-            <div class="tab_layout">
+            <div class="tab_layout" id="comparisons-tab-layout">
                 <div class="vert_tab">
                     {% block vertical_tabs %}{% endblock %}
                 </div>

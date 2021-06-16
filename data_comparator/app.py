@@ -237,6 +237,7 @@ class MenuBar(QMenuBar):
             ds2 = comp_dict_proc["ds_name"][1]
             ds1_df = dc.get_dataset(ds1)
             ds2_df = dc.get_dataset(ds2)
+            
             comp_paramters["summary"][ds1] = ds1_df.get_summary()
             comp_paramters["summary"][ds2] = ds2_df.get_summary()
 
