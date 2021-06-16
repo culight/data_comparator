@@ -124,6 +124,21 @@
     </style>
 
     <script>
+        function initSetup(evt, text) {
+            diff_cells = document.getElementsByClassName("diff");
+            for (i = 0; diff_cells.length - 1; i++) {
+                diff = diff_cells[i];
+                text = diff.outerText;
+                if ((text == "diff") | (text == "same")) {
+                    continue;
+                } else if (text.includes("-")) {
+                    diff.style.backgroundColor = "red";
+                } else {
+                    diff.style.backgroundColor = "green";
+                }
+            }
+        }
+
         function openTab(evt, tabName, orientation) {
             // Declare all variables
             var i, tabcontent, tablinks;
@@ -152,7 +167,7 @@
     </script>
 </head>
 
-<body>
+<body onload="initSetup()">
     <div class="container" style="display: flex; height: 100%;">
         <div id="summary_container" style="width: 30%; height: 100%;">
             <h2>Summary</h2>
