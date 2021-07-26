@@ -338,7 +338,7 @@ class TemporalColumn(Column):
         self.data_type = self.__class__.__name__
         self.min = raw_column.min()
         self.max = raw_column.max()
-        descr = raw_column.describe()
+        descr = raw_column.describe(datetime_is_numeric=True)
         self.unique = descr["unique"]
         # self.top = descr['top']
 
