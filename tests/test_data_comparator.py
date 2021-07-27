@@ -6,7 +6,9 @@ from pathlib import Path
 import data_comparator.data_comparator as dc
 
 VALID_DATA_TYPES = ("json", "avro", "csv", "sas7bdat", "parquet")
-TEST_DATA_DIR = "tests/test_data"
+TEST_DATA_DIR_FUNC = "tests/test_data/functional"
+TEST_DATA_DIR_UNIT = "tests/test_data/unit"
+TEST_DATA_DIR_INT = "tests/test_data/integration"
 
 LOGGER = logging.getLogger(__name__)
 
@@ -16,15 +18,16 @@ LOGGER = logging.getLogger(__name__)
 
 
 class DataComparatorHarness:
-    def __init__(self, ds_types):
+    def __init__(self, ds_types, test_data_dir):
         LOGGER.info("initializing data comparator test harness...")
         self.ds_types = ds_types
         self.test_data_paths = {key: [] for key in self.ds_types}
         self.test_data = {key: [] for key in self.ds_types}
-        self._load_data_paths()
+        self.test_data_dir = test_data_dir
+        self.load_data_paths()
 
-    def _load_data_paths(self):
-        for file_type in Path(TEST_DATA_DIR).glob("*"):
+    def load_data_paths(self):
+        for file_type in Path(self.test_data_dir).glob("*"):
             if file_type.stem not in self.ds_types:
                 continue
             for file_path in Path(file_type).glob("*"):
@@ -78,190 +81,260 @@ def ds_types_fix(pytestconfig):
     return ds_types if ds_types else VALID_DATA_TYPES
 
 
+## FUNCTIONAL TESTS ##
+
+
+@pytest.mark.functional
 @pytest.fixture
-def dc_harness(ds_types_fix):
-    return DataComparatorHarness(ds_types_fix)
+def dc_harness_func(ds_types_fix):
+    return DataComparatorHarness(
+        ds_types=ds_types_fix, test_data_dir=TEST_DATA_DIR_FUNC
+    )
 
 
-def test_load_dataset_csv(dc_harness):
+@pytest.mark.functional
+def test_load_dataset_csv(dc_harness_func):
     LOGGER.info("testing csv loading...")
 
     ds_type = "csv"
-    if ds_type not in dc_harness.ds_types:
+    if ds_type not in dc_harness_func.ds_types:
         pytest.skip("not testing {}".format(ds_type))
 
-    dc_harness.load_datasets(ds_type=ds_type)
+    LOGGER.info("outfitting the test harness...")
+    dc_harness_func.load_datasets(ds_type=ds_type)
 
-    assert dc_harness, "test harness not created properly"
-    assert len(dc_harness.test_data_paths[ds_type]) == len(
-        dc_harness.test_data[ds_type]
+    assert dc_harness_func, "test harness not created properly"
+    assert len(dc_harness_func.test_data_paths[ds_type]) == len(
+        dc_harness_func.test_data[ds_type]
     ), "not all {} datasets were loaded: \n{} \n{}".format(
-        ds_type, dc_harness.test_data_paths[ds_type], dc_harness.test_data[ds_type]
+        ds_type,
+        dc_harness_func.test_data_paths[ds_type],
+        dc_harness_func.test_data[ds_type],
     )
 
-    for dataset in dc_harness.test_data[ds_type]:
+    for dataset in dc_harness_func.test_data[ds_type]:
         assert (
             dataset != None and len(dataset.dataframe.index) >= 0
         ), "dataset {} is empty".format(dataset.name)
 
 
-def test_load_dataset_parquet(dc_harness):
+@pytest.mark.functional
+def test_load_dataset_parquet(dc_harness_func):
     LOGGER.info("testing parquet loading")
 
     ds_type = "parquet"
-    if ds_type not in dc_harness.ds_types:
+    if ds_type not in dc_harness_func.ds_types:
         pytest.skip("not testing {}".format(ds_type))
 
-    dc_harness.load_datasets(ds_type=ds_type)
+    LOGGER.info("outfitting the test harness...")
+    dc_harness_func.load_datasets(ds_type=ds_type)
 
-    assert dc_harness, "test harness not created properly"
-    assert len(dc_harness.test_data_paths[ds_type]) == len(
-        dc_harness.test_data[ds_type]
+    assert dc_harness_func, "test harness not created properly"
+    assert len(dc_harness_func.test_data_paths[ds_type]) == len(
+        dc_harness_func.test_data[ds_type]
     ), "not all {} datasets were loaded".format(ds_type)
 
-    for dataset in dc_harness.test_data[ds_type]:
+    for dataset in dc_harness_func.test_data[ds_type]:
         assert (
             dataset != None and len(dataset.dataframe.index) >= 0
         ), "dataset {} is empty".format(dataset.name)
 
 
-def test_load_dataset_sas(dc_harness):
+@pytest.mark.functional
+def test_load_dataset_sas(dc_harness_func):
     LOGGER.info("testing SAS loading")
 
     ds_type = "sas7bdat"
-    if ds_type not in dc_harness.ds_types:
+    if ds_type not in dc_harness_func.ds_types:
         pytest.skip("not testing {}".format(ds_type))
 
-    dc_harness.load_datasets(ds_type=ds_type)
+    LOGGER.info("outfitting the test harness...")
+    dc_harness_func.load_datasets(ds_type=ds_type)
 
-    assert dc_harness, "test harness not created properly"
-    assert len(dc_harness.test_data_paths[ds_type]) == len(
-        dc_harness.test_data[ds_type]
+    assert dc_harness_func, "test harness not created properly"
+    assert len(dc_harness_func.test_data_paths[ds_type]) == len(
+        dc_harness_func.test_data[ds_type]
     ), "not all {} datasets were loaded".format(ds_type)
 
-    for dataset in dc_harness.test_data[ds_type]:
+    for dataset in dc_harness_func.test_data[ds_type]:
         assert (
             dataset != None and len(dataset.dataframe.index) >= 0
         ), "dataset {} is empty".format(dataset.name)
 
 
-def test_load_dataset_json(dc_harness):
+@pytest.mark.functional
+def test_load_dataset_json(dc_harness_func):
     LOGGER.info("testing json loading")
 
     ds_type = "json"
-    if ds_type not in dc_harness.ds_types:
+    if ds_type not in dc_harness_func.ds_types:
         pytest.skip("not testing {}".format(ds_type))
 
-    dc_harness.load_datasets(ds_type=ds_type)
+    LOGGER.info("outfitting the test harness...")
+    dc_harness_func.load_datasets(ds_type=ds_type)
 
-    assert dc_harness, "test harness not created properly"
-    assert len(dc_harness.test_data_paths[ds_type]) == len(
-        dc_harness.test_data[ds_type]
+    assert dc_harness_func, "test harness not created properly"
+    assert len(dc_harness_func.test_data_paths[ds_type]) == len(
+        dc_harness_func.test_data[ds_type]
     ), "not all {} datasets were loaded".format(ds_type)
 
-    for dataset in dc_harness.test_data[ds_type]:
+    for dataset in dc_harness_func.test_data[ds_type]:
         assert (
             dataset != None and len(dataset.dataframe.index) >= 0
         ), "dataset {} is empty".format(dataset.name)
 
 
-@pytest.fixture
-def dc_loaded_harness(ds_types_fix):
-    dc_harness = DataComparatorHarness(ds_types_fix)
-    return dc_harness.load_all_datasets()
+def _column_test(col_name, col):
+    try:
+        print("Performing check on {} ...".format(col_name))
+        col.perform_check()
+    except:
+        print("perform check failed on {}".format(col_name))
+        raise AssertionError
 
 
-def test_get_dataset(dc_loaded_harness):
+def _dataset_test(ds):
+    # columns
+    assert len(ds.columns) > 1, "No columns found for dataset {}".format(ds.name)
+    for col_name, col in ds.columns.items():
+        _column_test(col_name, col)
+
+
+@pytest.mark.functional
+def test_dataset(dc_harness_func):
     """
     [summary]
     """
-    for ds_type in dc_loaded_harness.data_types:
-        if len(dc_loaded_harness[ds_type].test_data) <= 0:
-            continue
-        data_name = dc_loaded_harness[ds_type].test_data[0].name
-        assert dc_loaded_harness.get_dataset(data_name) != None
-    # print(dc_loaded_harness.test_data)
+
+    LOGGER.info("outfitting the test harness...")
+    dc_harness_func.load_all_datasets()
+
+    for ds_type in dc_harness_func.ds_types:
+        ds_list = dc_harness_func.test_data[ds_type]
+        for ds in ds_list:
+            _dataset_test(ds)
 
 
+## UNIT TESTS ##
+
+
+@pytest.mark.unit
+@pytest.fixture
+def dc_harness_unit(ds_types_fix):
+    return DataComparatorHarness(
+        ds_types=ds_types_fix, test_data_dir=TEST_DATA_DIR_UNIT
+    )
+
+
+@pytest.mark.unit
 def test_get_datasets(dc_loaded_harness):
     """
     [summary]
     """
+
+    LOGGER.info("outfitting the test harness...")
+    dc_harness_func.load_data_paths(test_data_dir=TEST_DATA_DIR_UNIT)
+    dc_harness_func.load_all_datasets()
+
+
+@pytest.mark.unit
+def test_pop_dataset():
+    """
+    [summary]
+    """
+
+    LOGGER.info("outfitting the test harness...")
+    dc_harness_func.load_data_paths(test_data_dir=TEST_DATA_DIR_UNIT)
+    dc_harness_func.load_all_datasets()
+
+
+@pytest.mark.unit
+def test_pop_datasets():
+    """
+    [summary]
+    """
+
+    LOGGER.info("outfitting the test harness...")
+    dc_harness_func.load_data_paths(test_data_dir=TEST_DATA_DIR_UNIT)
+    dc_harness_func.load_all_datasets()
+
+
+@pytest.mark.unit
+def test_clear_datasets():
+    """
+    [summary]
+    """
+
+    LOGGER.info("outfitting the test harness...")
+    dc_harness_func.load_data_paths(test_data_dir=TEST_DATA_DIR_UNIT)
+    dc_harness_func.load_all_datasets()
+
+
+@pytest.mark.unit
+def test_remove_dataset():
     pass
 
 
-# def test_pop_dataset():
-#     """
-#     [summary]
-#     """
-#     pass
+@pytest.mark.unit
+def test_compare():
+    pass
 
 
-# def test_pop_datasets():
-#     """
-#     [summary]
-#     """
-#     pass
+@pytest.mark.unit
+def test_compare_ds():
+    pass
 
 
-# def test_clear_datasets():
-#     """
-#     [summary]
-#     """
-#     pass
+@pytest.mark.unit
+def test_get_comparisons():
+    pass
 
 
-# def test_remove_dataset():
-#     pass
+@pytest.mark.unit
+def test_get_comparison():
+    pass
 
 
-# def test_compare():
-#     pass
+@pytest.mark.unit
+def test_get_comparisons():
+    pass
 
 
-# def test_compare_ds():
-#     pass
+@pytest.mark.unit
+def test_pop_comparison():
+    pass
 
 
-# def test_get_comparisons():
-#     pass
+@pytest.mark.unit
+def test_pop_comparisons():
+    pass
 
 
-# def test_get_comparison():
-#     pass
+@pytest.mark.unit
+def test_remove_comparison():
+    pass
 
 
-# def test_get_comparisons():
-#     pass
+@pytest.mark.unit
+def test_remove_comparisons():
+    pass
 
 
-# def test_pop_comparison():
-#     pass
+@pytest.mark.unit
+def test_clear_comparison():
+    pass
 
 
-# def test_pop_comparisons():
-#     pass
+@pytest.mark.unit
+def test_profile():
+    pass
 
 
-# def test_remove_comparison():
-#     pass
+@pytest.mark.unit
+def test_pop_all():
+    pass
 
 
-# def test_remove_comparisons():
-#     pass
-
-
-# def test_clear_comparison():
-#     pass
-
-
-# def test_profile():
-#     pass
-
-
-# def test_pop_all():
-#     pass
-
-
-# def test_view():
-#     pass
+@pytest.mark.unit
+def test_view():
+    pass
