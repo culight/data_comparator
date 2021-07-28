@@ -20,7 +20,7 @@ LOGGER = logging.getLogger(__name__)
 class DataComparatorHarness:
     def __init__(self, ds_types, test_data_dir):
         LOGGER.info("initializing data comparator test harness...")
-        self.ds_types = ds_types
+        self.ds_types = ds_types if ds_types else VALID_DATA_TYPES
         self.test_data_paths = {key: [] for key in self.ds_types}
         self.test_data = {key: [] for key in self.ds_types}
         self.test_data_dir = test_data_dir
@@ -183,25 +183,8 @@ def test_load_dataset_json(dc_harness_func):
             dataset != None and len(dataset.dataframe.index) >= 0
         ), "dataset {} is empty".format(dataset.name)
 
-
-def _column_test(col_name, col):
-    try:
-        print("Performing check on {} ...".format(col_name))
-        col.perform_check()
-    except:
-        print("perform check failed on {}".format(col_name))
-        raise AssertionError
-
-
-def _dataset_test(ds):
-    # columns
-    assert len(ds.columns) > 1, "No columns found for dataset {}".format(ds.name)
-    for col_name, col in ds.columns.items():
-        _column_test(col_name, col)
-
-
 @pytest.mark.functional
-def test_dataset(dc_harness_func):
+def test_dataset_and_column(dc_harness_func):
     """
     [summary]
     """
@@ -212,7 +195,14 @@ def test_dataset(dc_harness_func):
     for ds_type in dc_harness_func.ds_types:
         ds_list = dc_harness_func.test_data[ds_type]
         for ds in ds_list:
-            _dataset_test(ds)
+            assert len(ds.columns) > 1, "No columns found for dataset {}".format(ds.name)
+            for col_name, col in ds.columns.items():
+                try:
+                    print("Performing check on {} ...".format(col_name))
+                    col.perform_check()
+                except:
+                    print("perform check failed on {}".format(col_name))
+                    raise AssertionError
 
 
 ## UNIT TESTS ##
@@ -350,6 +340,26 @@ def dc_harness_int(ds_types_fix):
 
 
 @pytest.mark.integration
+def _bool_test():
+    check = ds.perform_check()
+
+
+@pytest.mark.integration
+def _string_test():
+    pass
+
+
+@pytest.mark.integration
+def _numeric_test():
+    pass
+
+
+@pytest.mark.integration
+def _date_test():
+    pass
+
+
+@pytest.mark.integration
 def test_dataset(dc_harness_int):
     """
     [summary]
@@ -361,5 +371,12 @@ def test_dataset(dc_harness_int):
     for ds_type in dc_harness_int.ds_types:
         ds_list = dc_harness_int.test_data[ds_type]
         for ds in ds_list:
-            print(ds.name)
+            if "bool" in ds.name:
+                _bool_test(ds)
+            elif "string" in ds.name:
+                _string_test(ds)
+            elif "numeric" in ds.name:
+                _numeric_test(ds)
+            elif "date" in ds.name:
+                _date_test(ds)
 
