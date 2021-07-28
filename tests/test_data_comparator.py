@@ -338,3 +338,28 @@ def test_pop_all():
 @pytest.mark.unit
 def test_view():
     pass
+
+
+## INTEGRATION TESTS ##
+
+
+@pytest.mark.integration
+@pytest.fixture
+def dc_harness_int(ds_types_fix):
+    return DataComparatorHarness(ds_types=ds_types_fix, test_data_dir=TEST_DATA_DIR_INT)
+
+
+@pytest.mark.integration
+def test_dataset(dc_harness_int):
+    """
+    [summary]
+    """
+
+    LOGGER.info("outfitting the test harness...")
+    dc_harness_int.load_all_datasets()
+
+    for ds_type in dc_harness_int.ds_types:
+        ds_list = dc_harness_int.test_data[ds_type]
+        for ds in ds_list:
+            print(ds.name)
+

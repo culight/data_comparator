@@ -339,9 +339,7 @@ class TemporalColumn(Column):
         self.data_type = self.__class__.__name__
         self.min = raw_column.min()
         self.max = raw_column.max()
-        descr = raw_column.describe(datetime_is_numeric=True)
-        self.unique = descr["unique"]
-        # self.top = descr['top']
+        self.unique = len(raw_column)-len(raw_column.drop_duplicates())
 
     def get_summary(self) -> dict:
         return {
@@ -353,7 +351,6 @@ class TemporalColumn(Column):
             "min": self.min,
             "max": self.max,
             "unique": self.unique,
-            # 'top': self.top
         }
 
     def perform_check(self) -> dict:
