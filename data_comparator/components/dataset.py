@@ -179,7 +179,7 @@ class Dataset(object):
         return data
 
     def convert_dates(self, raw_column):
-        if raw_column.dtype == "object":
+        if (raw_column.dtype == "object") or (raw_column.dtype == "O"):
             try:
                 raw_column = pd.to_datetime(raw_column)
             except (ValueError, TypeError, AttributeError) as e:
@@ -197,17 +197,18 @@ class Dataset(object):
             raw_column = self.convert_dates(self.dataframe[raw_col_name])
             if re.search(r"(int)", str(raw_column.dtype)):
                 self.columns[raw_col_name] = NumericColumn(raw_column, self.name)
-            if re.search(r"(float)", str(raw_column.dtype)):
+            elif re.search(r"(float)", str(raw_column.dtype)):
                 self.columns[raw_col_name] = NumericColumn(raw_column, self.name)
-            if (
-                re.search(r"(str)", str(raw_column.dtype))
-                or str(raw_column.dtype) == "object"
-            ):
+            elif re.search(r"(str)", str(raw_column.dtype)):
                 self.columns[raw_col_name] = StringColumn(raw_column, self.name)
-            if re.search(r"(time)", str(raw_column.dtype)):
+            elif re.search(r"time|ns", str(raw_column.dtype)):
                 self.columns[raw_col_name] = TemporalColumn(raw_column, self.name)
-            if re.search(r"(bool)", str(raw_column.dtype)):
+            elif re.search(r"(bool)", str(raw_column.dtype)):
                 self.columns[raw_col_name] = BooleanColumn(raw_column, self.name)
+            else:
+                if raw_column.notna().dtype == "bool":
+                    self.columns[raw_col_name] = BooleanColumn(raw_column, self.name)
+                self.columns[raw_col_name] = StringColumn(raw_column, self.name)
 
     def get_summary(self):
         return {
