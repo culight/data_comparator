@@ -206,8 +206,6 @@ class Dataset(object):
             elif re.search(r"(bool)", str(raw_column.dtype)):
                 self.columns[raw_col_name] = BooleanColumn(raw_column, self.name)
             else:
-                if raw_column.notna().dtype == "bool":
-                    self.columns[raw_col_name] = BooleanColumn(raw_column, self.name)
                 self.columns[raw_col_name] = StringColumn(raw_column, self.name)
 
     def get_summary(self):
@@ -273,9 +271,17 @@ class StringColumn(Column):
         try:
             Column.__init__(self, raw_column, ds_name)
             self.data_type = self.__class__.__name__
-            self.text_length_mean = raw_column.str.len().mean()
-            self.text_length_std = raw_column.str.len().std()
-            self.text_length_med = raw_column.str.len().median()
+            try:
+                self.text_length_mean = raw_column.str.len().mean()
+                self.text_length_std = raw_column.str.len().std()
+                self.text_length_med = raw_column.str.len().median()
+            except AttributeError:
+                LOGGER.error(
+                    "Cannot use '.str': Column likely contains a non-string type"
+                )
+                self.text_length_mean = None
+                self.text_length_std = None
+                self.text_length_med = None
             descr = raw_column.describe()
             self.unique = descr["unique"]
             self.duplicates = self.count - self.unique
@@ -339,7 +345,7 @@ class TemporalColumn(Column):
         self.data_type = self.__class__.__name__
         self.min = raw_column.min()
         self.max = raw_column.max()
-        self.unique = len(raw_column)-len(raw_column.drop_duplicates())
+        self.unique = len(raw_column) - len(raw_column.drop_duplicates())
 
     def get_summary(self) -> dict:
         return {
@@ -362,7 +368,9 @@ class BooleanColumn(Column):
     def __init__(self, raw_column, ds_name):
         Column.__init__(self, raw_column, ds_name)
         self.data_type = self.__class__.__name__
-        # self.top = raw_column.value_counts().idxmax()
+        descr = raw_column.describe()
+        self.top = descr["top"]
+        self.unique = descr["unique"]
 
     def get_summary(self) -> dict:
         return {
@@ -371,7 +379,8 @@ class BooleanColumn(Column):
             "count": self.count,
             "missing": self.missing,
             "data_type": self.data_type,
-            # top': self.top
+            "top": self.top,
+            "unique": self.unique,
         }
 
     def perform_check(self) -> dict:
