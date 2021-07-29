@@ -381,7 +381,7 @@ def test_string(ds_map_int):
 def test_numeric(ds_map_int):
     ds = ds_map_int["numeric_test"]
     for col_name, col in ds.columns.items():
-        LOGGER.info("testing column {}...".format(col_name))
+        print("Testing column {}...".format(col_name))
         check = col.perform_check()
         print(check)
 
@@ -390,6 +390,6 @@ def test_numeric(ds_map_int):
 def test_date(ds_map_int):
     ds = ds_map_int["date_test"]
     for col_name, col in ds.columns.items():
-        LOGGER.info("testing column {}...".format(col_name))
+        print("Testing column {}...".format(col_name))
         check = col.perform_check()
         print(check)
