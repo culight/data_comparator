@@ -12,6 +12,7 @@ Data Comparator would be useful for the following scenarios:
 - Profile a dataset during interactive debugging
 - Compare various columns within the same dataset
 - Check for specific abnormalities within a dataset
+- Export a comparison in HTML form
 
 ## Setup
 
