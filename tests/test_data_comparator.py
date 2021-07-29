@@ -183,6 +183,7 @@ def test_load_dataset_json(dc_harness_func):
             dataset != None and len(dataset.dataframe.index) >= 0
         ), "dataset {} is empty".format(dataset.name)
 
+
 @pytest.mark.functional
 def test_dataset_and_column(dc_harness_func):
     """
@@ -195,7 +196,9 @@ def test_dataset_and_column(dc_harness_func):
     for ds_type in dc_harness_func.ds_types:
         ds_list = dc_harness_func.test_data[ds_type]
         for ds in ds_list:
-            assert len(ds.columns) > 1, "No columns found for dataset {}".format(ds.name)
+            assert len(ds.columns) > 1, "No columns found for dataset {}".format(
+                ds.name
+            )
             for col_name, col in ds.columns.items():
                 try:
                     print("Performing check on {} ...".format(col_name))
@@ -335,48 +338,58 @@ def test_view():
 
 @pytest.mark.integration
 @pytest.fixture
-def dc_harness_int(ds_types_fix):
-    return DataComparatorHarness(ds_types=ds_types_fix, test_data_dir=TEST_DATA_DIR_INT)
-
-
-@pytest.mark.integration
-def _bool_test():
-    check = ds.perform_check()
-
-
-@pytest.mark.integration
-def _string_test():
-    pass
-
-
-@pytest.mark.integration
-def _numeric_test():
-    pass
-
-
-@pytest.mark.integration
-def _date_test():
-    pass
-
-
-@pytest.mark.integration
-def test_dataset(dc_harness_int):
-    """
-    [summary]
-    """
-
-    LOGGER.info("outfitting the test harness...")
+def ds_map_int(ds_types_fix):
+    dc_harness_int = DataComparatorHarness(
+        ds_types=ds_types_fix, test_data_dir=TEST_DATA_DIR_INT
+    )
     dc_harness_int.load_all_datasets()
-
+    ds_map_int = {}
     for ds_type in dc_harness_int.ds_types:
         ds_list = dc_harness_int.test_data[ds_type]
         for ds in ds_list:
-            if "bool" in ds.name:
-                _bool_test(ds)
-            elif "string" in ds.name:
-                _string_test(ds)
-            elif "numeric" in ds.name:
-                _numeric_test(ds)
-            elif "date" in ds.name:
-                _date_test(ds)
+            ds_map_int[ds.name] = ds
+    return ds_map_int
 
+
+@pytest.mark.integration
+def test_bool(ds_map_int):
+    key = {
+        "bool_w_missing": ["", ""],
+        "bool_onlytrue": [True, ""],
+        "bool_onlyfalse": ["", True],
+        "bool_invalid": ["", ""],
+    }
+    ds = ds_map_int["bool_test"]
+    for col_name, col in ds.columns.items():
+        print("Testing column {}...".format(col_name))
+        check = col.perform_check()
+        assert check, "Check result was not returned for test"
+        assert key[col_name] == list(check.values())
+
+
+@pytest.mark.integration
+def test_string(ds_map_int):
+    print(ds_map_int)
+    ds = ds_map_int["string_test"]
+    for col_name, col in ds.columns.items():
+        print("Testing column {}...".format(col_name))
+        check = col.perform_check()
+        print(check)
+
+
+@pytest.mark.integration
+def test_numeric(ds_map_int):
+    ds = ds_map_int["numeric_test"]
+    for col_name, col in ds.columns.items():
+        LOGGER.info("testing column {}...".format(col_name))
+        check = col.perform_check()
+        print(check)
+
+
+@pytest.mark.integration
+def test_date(ds_map_int):
+    ds = ds_map_int["date_test"]
+    for col_name, col in ds.columns.items():
+        LOGGER.info("testing column {}...".format(col_name))
+        check = col.perform_check()
+        print(check)
