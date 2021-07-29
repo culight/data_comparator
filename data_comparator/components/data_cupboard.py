@@ -6,7 +6,6 @@
 """
 import logging
 import os
-from .dataset import Dataset
 
 logging.basicConfig(
     format="%(asctime)s - %(message)s", level=os.environ.get("LOGLEVEL", "INFO")

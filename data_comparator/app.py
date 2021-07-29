@@ -10,15 +10,19 @@
 from os import mkdir
 import sys
 import logging
+from jinja2 import Environment, PackageLoader, select_autoescape
 import json
 from pathlib import Path
 import time
+import pkg_resources
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtPrintSupport import *
 from PyQt5 import uic
+
+import webbrowser
 
 from data_comparator import data_comparator as dc
 from .ui_models.utilities import *
@@ -59,6 +63,10 @@ class MenuBar(QMenuBar):
         self.actionCSV = parent.actionCSV
         self.actionParquet = parent.actionParquet
         self.actionJSON = parent.actionJSON
+        self.actionSwapDatasets = parent.actionSwapDatasets
+        self.actionExportHTMLReport = parent.actionExportHTMLReport
+        self.actionIncludeValidations = parent.actionIncludeValidations
+        self.actionAbout = parent.actionAbout
 
         # self.actionNew.triggered.connect(self.new)
         self.actionReset.triggered.connect(self.reset)
@@ -66,6 +74,8 @@ class MenuBar(QMenuBar):
         self.actionCSV.triggered.connect(self.export_to_csv)
         self.actionParquet.triggered.connect(self.export_to_parquet)
         self.actionJSON.triggered.connect(self.export_to_json)
+        self.actionExportHTMLReport.triggered.connect(self.export_report)
+        self.actionAbout.triggered.connect(self.about)
 
     class ExportFile:
         def __init__(self, export_type, parent):
@@ -73,7 +83,7 @@ class MenuBar(QMenuBar):
             self.export_type = export_type
             self.parent = parent
             try:
-                self.comparisons = dc.get_comparisons()
+                self.comparisons = self.parent.compare_all()
                 assert len(self.comparisons) > 0
             except AssertionError:
                 LOGGER.error("Cannot export - no comparison was found")
@@ -87,9 +97,12 @@ class MenuBar(QMenuBar):
                 str(current_time),
                 "Data Files (*.{})".format(self.export_type),
             )
-            folder_path = Path(fname.replace("." + self.export_type, ""))
-            folder_path.mkdir(parents=True, exist_ok=True)
-            return folder_path
+            if self.export_type != "html":
+                output_path = Path(fname.replace("." + self.export_type, ""))
+                output_path.mkdir(parents=True, exist_ok=True)
+            else:
+                output_path = Path(fname)
+            return output_path
 
     def new(self):
         """
@@ -194,6 +207,62 @@ class MenuBar(QMenuBar):
                     json.dump(json_output, f)
         except Exception as e:
             LOGGER.error(str(e))
+
+    def export_report(self, validations=False):
+        """
+        Export custom report to HTML
+        """
+        env = Environment(
+            loader=PackageLoader("data_comparator.ui"), autoescape=select_autoescape()
+        )
+
+        template = env.get_template("template.html")
+        html_file = self.ExportFile(export_type="html", parent=self.parent)
+
+        try:
+            file_path = html_file.get_filepath()
+            f = open(file_path, "w", encoding="utf-8")
+
+            comp_paramters = {
+                "comp_names": html_file.comparisons.keys(),
+                "comparisons": {},
+                "summary": {},
+            }
+
+            for comp_name, comp in html_file.comparisons.items():
+                comp_dict = comp.dataframe.transpose().to_dict()
+                comp_dict_proc = {}
+                for name, value in comp_dict.items():
+                    comp_dict_proc[name] = list(value.values())
+                comp_paramters["comparisons"][comp_name] = comp_dict_proc
+
+            ds1 = comp_dict_proc["ds_name"][0]
+            ds2 = comp_dict_proc["ds_name"][1]
+            ds1_df = dc.get_dataset(ds1)
+            ds2_df = dc.get_dataset(ds2)
+
+            comp_paramters["summary"][ds1] = ds1_df.get_summary()
+            comp_paramters["summary"][ds2] = ds2_df.get_summary()
+
+            html_output = template.render(
+                comp_names=comp_paramters["comp_names"],
+                comps=comp_paramters["comparisons"],
+                datasets=comp_paramters["summary"],
+            )
+
+            f.write(html_output)
+            f.close()
+            webbrowser.open_new_tab(file_path)
+        except Exception as e:
+            LOGGER.error(str(e))
+
+    def about(self):
+        version = pkg_resources.require("data-comparator")[0].version
+        QMessageBox.about(
+            self,
+            "About Data Comparator",
+            "Version: {} \nAuthor: Demerrick J. Moton\n2021".format(version),
+        )
 
 
 class MainWindow(QMainWindow):
@@ -303,6 +372,7 @@ class MainWindow(QMainWindow):
 
         # set up compare and export buttons
         self.compareButton.clicked.connect(self.compare)
+        self.exportValidationsButton.clicked.connect(self.export_validations)
 
         # set up comparison output table
         self.comparisonTable.horizontalHeader().setSectionResizeMode(
@@ -311,12 +381,16 @@ class MainWindow(QMainWindow):
 
         self.show()
 
-    def _menu_options_enabled(self, status):
+    def _active_menu_options_enabled(self, status):
         self.actionCSV.setEnabled(status)
         self.actionParquet.setEnabled(status)
         self.actionJSON.setEnabled(status)
-        self.actionReset.setEnabled(status)
+        self.actionExportHTMLReport.setEnabled(status)
+        self.actionIncludeValidations.setEnabled(status)
         # json
+
+    def _passive_menu_options_enabled(self, status):
+        self.actionReset.setEnabled(status)
 
     def _is_matching_type(self, col1, col2):
         global DATASET1
@@ -442,6 +516,20 @@ class MainWindow(QMainWindow):
 
                 index += 1
 
+    def export_validations(self):
+        """Export the current validations content"""
+
+        try:
+            config_export_dialog = QMessageBox.about(
+                self.exportValidationsButton,
+                "Data Comparator",
+                "Validations configuration has been exported.",
+            )
+
+        except Exception as e:
+            LOGGER.error("Could not export validations configuration")
+            LOGGER.error(str(e))
+
     def profile(self, col, ds):
         """
         provide profile info for one column
@@ -463,7 +551,7 @@ class MainWindow(QMainWindow):
 
         self.comp_table_model = ComparisonOutputTableModel(profile)
         self.comparisonTable.setModel(self.comp_table_model)
-        self.exportButton.setEnabled(True)
+        self.exportValidationsButton.setEnabled(True)
 
         dtype = None
         try:
@@ -477,13 +565,16 @@ class MainWindow(QMainWindow):
 
         self.comparisonsTabLayout.setCurrentIndex(1)
 
-    def compare(self):
+    def compare(self, comp_name_external=None, validation_for_export=False):
         """
         compare datasets of interest
         """
-
         # get comparison names
-        comp_name = self.comparisonsComboBox.currentText()
+        comp_name = (
+            comp_name_external
+            if comp_name_external
+            else self.comparisonsComboBox.currentText()
+        )
         col1, col2 = comp_name.split("-")
 
         # is this a profiling combination?
@@ -496,8 +587,11 @@ class MainWindow(QMainWindow):
         # retreive comparison settings
         compare_by_col = col1 == col2
         add_diff_col = self.addDiffCheckbox.isChecked()
-        perform_validations = self.performValidationsCheckbox.isChecked()
         create_plots_checked = self.createVizCheckbox.isChecked()
+        if validation_for_export:
+            perform_validations = True
+        else:
+            perform_validations = self.performValidationsCheckbox.isChecked()
 
         # make comparisons
         self.comp_df = None
@@ -516,7 +610,7 @@ class MainWindow(QMainWindow):
 
             self.comp_table_model = ComparisonOutputTableModel(self.comp_df)
             self.comparisonTable.setModel(self.comp_table_model)
-            self._menu_options_enabled(True)
+
         else:
             LOGGER.error("Datasets not available to make comparisons")
 
@@ -532,6 +626,33 @@ class MainWindow(QMainWindow):
             self.create_plots(self.comp_df)
 
         self.comparisonsTabLayout.setCurrentIndex(1)
+
+    def compare_all(self):
+        passive_comparisons = {}
+
+        if self.comparisons:
+            cached_comparisons = dc.get_comparisons()
+            for c in self.comparisons:
+                comp_name = c[0]
+                if comp_name not in cached_comparisons:
+                    self.compare(
+                        comp_name,
+                        validation_for_export=self.actionIncludeValidations.isChecked(),
+                    )
+
+                comp_split = comp_name.split("-")
+                if len(set(comp_split)) == 1:
+                    # both columns have the same name -- use one
+                    comp_name = comp_split[0]
+                comparison = dc.get_comparison(comp_name)
+
+                if comparison:
+                    # only pull cached comparisons currently in list
+                    passive_comparisons[comparison.name] = comparison
+
+        else:
+            LOGGER.warn("No comparisons to make")
+        return passive_comparisons
 
     def add_comparison(self):
         colList1_indexes = self.dataset1Columns.selectedIndexes()
@@ -580,7 +701,7 @@ class MainWindow(QMainWindow):
         if self.isPopulated["compList"]:
             self.remove_one_button.button.setEnabled(True)
             self.remove_all_button.button.setEnabled(True)
-
+            self._active_menu_options_enabled(True)
         self._update_setup()
 
     def add_comparisons(self):
@@ -619,6 +740,7 @@ class MainWindow(QMainWindow):
             self.remove_one_button.button.setEnabled(True)
             self.remove_all_button.button.setEnabled(True)
             self.add_all_button.button.setEnabled(False)
+            self._active_menu_options_enabled(True)
 
         self._update_setup()
 
@@ -639,6 +761,7 @@ class MainWindow(QMainWindow):
             self.remove_one_button.button.setEnabled(False)
             self.remove_all_button.button.setEnabled(False)
             self.add_all_button.button.setEnabled(True)
+            self._active_menu_options_enabled(False)
 
         self._update_setup()
 
@@ -646,7 +769,8 @@ class MainWindow(QMainWindow):
         """
         remove loaded datasets and clear from list view
         """
-        self._menu_options_enabled(False)
+        self._active_menu_options_enabled(False)
+        self._passive_menu_options_enabled(False)
         self.comparisonTable.setModel(None)
         if self.dataset1Columns_model:
             self.dataset1Columns_model.reset()
@@ -674,6 +798,7 @@ class MainWindow(QMainWindow):
             self.remove_one_button.button.setEnabled(False)
             self.remove_all_button.button.setEnabled(False)
             self.add_all_button.button.setEnabled(True)
+            self._active_menu_options_enabled(False)
 
         self._update_setup()
 
@@ -748,13 +873,14 @@ class MainWindow(QMainWindow):
         if self.isPopulated["colList1"] and self.isPopulated["colList2"]:
             self.add_one_button.button.setEnabled(True)
             self.add_all_button.button.setEnabled(True)
+            self._passive_menu_options_enabled(True)
         else:
             self.add_one_button.button.setEnabled(False)
             self.add_all_button.button.setEnabled(False)
+            self._passive_menu_options_enabled(False)
 
 
 def main(*args, **kwargs):
-    import pkg_resources
 
     app = QApplication(sys.argv)
     app.setApplicationName("Data Comparator")

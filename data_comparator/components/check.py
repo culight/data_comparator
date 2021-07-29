@@ -1,9 +1,7 @@
 """
 ### CODE OWNERS: Demerrick Moton
-
 ### OBJECTIVE:
     Module for the data type checks
-
 ### DEVELOPER NOTES:
 """
 import re
@@ -28,8 +26,7 @@ def check_string_column(column, validations, row_limit=None):
 
     string_checks = {}
     for case, settings in validations.items():
-        doCheck = (len(settings["fields"]) == 0) or (
-            "name" in settings["fields"])
+        doCheck = (len(settings["fields"]) == 0) or ("name" in settings["fields"])
         if settings["enabled"] and doCheck:
             string_checks[case] = ""
 
@@ -49,7 +46,7 @@ def check_string_column(column, validations, row_limit=None):
             row_content = row_content.decode()
 
         # check for numeric data
-        if not re.search(r".[a-zA-Z].", row_content):
+        if not re.search(r".[a-zA-Z].", str(row_content)):
             try:
                 float(row_content)
                 string_checks["numeric_data"] = row_content
@@ -103,7 +100,7 @@ def check_string_column(column, validations, row_limit=None):
 
             if "contains" in string_checks:
                 if not string_checks["contains"]:
-                    if row_content in validations["contains"]["value"].split(','):
+                    if row_content in validations["contains"]["value"].split(","):
                         string_checks["contains"] = row_content
 
     return string_checks
@@ -115,8 +112,7 @@ def check_numeric_column(column, validations):
     LOGGER.info("Performing check for numeric column...")
     numeric_checks = {}
     for case, settings in validations.items():
-        doCheck = (len(settings["fields"]) == 0) or (
-            "name" in settings["fields"])
+        doCheck = (len(settings["fields"]) == 0) or ("name" in settings["fields"])
         if settings["enabled"] and doCheck:
             numeric_checks[case] = ""
 
@@ -126,8 +122,7 @@ def check_numeric_column(column, validations):
             numeric_checks["susp_skewness"] = str(col_skew)
 
     if "pot_outliers" in numeric_checks:
-        col_zscore = (column.data - column.data.mean()) / \
-            column.data.std(ddof=0)
+        col_zscore = (column.data - column.data.mean()) / column.data.std(ddof=0)
         num_pot_outliers = len(np.where(np.abs(col_zscore) > 3)[0])
         if num_pot_outliers > 0:
             numeric_checks["pot_outliers"] = str(num_pot_outliers)
@@ -140,8 +135,9 @@ def check_numeric_column(column, validations):
     if "value_threshold_upper" in numeric_checks:
         value = None
         try:
-            value = df[df[column.name] > float(
-                validations["value_threshold_upper"]["value"])].iloc[0][0]
+            value = df[
+                df[column.name] > float(validations["value_threshold_upper"]["value"])
+            ].iloc[0][0]
         except IndexError:
             pass  # add logger
         if value:
@@ -150,8 +146,9 @@ def check_numeric_column(column, validations):
     if "value_threshold_lower" in numeric_checks:
         value = None
         try:
-            value = df[df[column.name] < float(
-                validations["value_threshold_lower"]["value"])].iloc[0][0]
+            value = df[
+                df[column.name] < float(validations["value_threshold_lower"]["value"])
+            ].iloc[0][0]
         except IndexError:
             pass  # add logger
         if value:
@@ -168,8 +165,7 @@ def check_temporal_column(column, validations):
     LOGGER.info("Performing check for temporal (time, datatime, etc.) column...")
     temporal_checks = {}
     for case, settings in validations.items():
-        doCheck = (len(settings["fields"]) == 0) or (
-            "name" in settings["fields"])
+        doCheck = (len(settings["fields"]) == 0) or ("name" in settings["fields"])
         if settings["enabled"] and doCheck:
             temporal_checks[case] = ""
 
@@ -193,20 +189,18 @@ def check_temporal_column(column, validations):
 
 
 def check_boolean_column(column, validations):
-    LOGGER.info("Performing check for boolean column...")
+    LOGGER.info("Performing check for boolean column {}...".format(column.name))
     boolean_checks = {}
     for case, settings in validations.items():
-        doCheck = (len(settings["fields"]) == 0) or (
-            "name" in settings["fields"])
+        doCheck = (len(settings["fields"]) == 0) or ("name" in settings["fields"])
         if settings["enabled"] and doCheck:
             boolean_checks[case] = ""
 
-    print("\nPerforming check for string column...")
     if "only_false" in boolean_checks:
         if (column.top == False) and (column.unique == 1):
-            boolean_checks["only_false"] == True
+            boolean_checks["only_false"] = True
     if "only_true" in boolean_checks:
         if (column.top == True) and (column.unique == 1):
-            boolean_checks["only_true"] == True
+            boolean_checks["only_true"] = True
 
     return boolean_checks

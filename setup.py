@@ -3,16 +3,14 @@ import setuptools
 
 setuptools.setup(
     name="data-comparator",
-    version="0.5.1",
+    version="0.7.7",
     author="Demerrick Moton",
     author_email="dmoton3.14@gmail.com",
     packages={"data_comparator", "data_comparator.components", "data_comparator.ui",},
     include_package_data=True,
     package_data={
         "data_comparator.components": ["validations_config.json"],
-        "data_comparator.ui": [
-            "*.ui",
-        ],
+        "data_comparator.ui": ["*.ui",],
     },
     description="Data profiling tool with a focus on dataset comparisons",
     long_description=open("README.md").read(),

@@ -1,0 +1,83 @@
+{% extends "base_layout.html" %}
+
+{% block horizontal_tabs %}
+{% for ds_name, ds in datasets.items() %}
+<button class="tablinks" onclick="openTab(event, 'ds{{loop.index}}', 'horiz')">{{ds_name}}</button>
+{% endfor %}
+{% endblock %}
+
+{% block details %}
+{% for name, ds in datasets.items() %}
+{% if loop.index == 1 %}
+<div id="ds{{loop.index}}" class="horiz_tabcontent" style="display:block">
+    {% else %}
+    <div id="ds{{loop.index}}" class="horiz_tabcontent">
+        {% endif %}
+        <div class="summary_table" id="col_details_{{loop.index}}">
+            <h3>Details</h3>
+            <table class="table" id="summary_details">
+                <tr>
+                    <th>Parameter</th>
+                    <th>Value</th>
+                </tr>
+                <tr>
+                    <td class="key-col">File</td>
+                    <td class="val-col">{{ds["path"]}}</td>
+                </tr>
+                <tr>
+                    <td class="key-col">Format</td>
+                    <td class="val-col">{{ds["format"]}}</td>
+                </tr>
+                <tr>
+                    <td class="key-col">Size</td>
+                    <td class="val-col">{{ds["size"]}}</td>
+                </tr>
+                <tr>
+                    <td class="key-col">Dataset Name</td>
+                    <td class="val-col">{{name}}</td>
+                </tr>
+                <tr>
+                    <td class="key-col">Load Time</td>
+                    <td class="val-col">{{ds["load_time"]}}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+    {% endblock %}
+
+    {% block vertical_tabs %}
+    {% for comp_name in comp_names %}
+    <button class="tablinks" onclick="openTab(event, 'comp{{loop.index}}', 'vert')">{{comp_name}}</button>
+    {% endfor %}
+    {% endblock %}
+
+    {% block comparison_tables %}
+    {% for name, comp in comps.items() %}
+    {% if loop.index == 1 %}
+    <div id="comp{{loop.index}}" class="vert_tabcontent">
+        {% else %}
+        <div id="comp{{loop.index}}" class="vert_tabcontent" style="display:none">
+            {% endif %}
+            <div class="comparison_table" id="comparison_detail">
+                <h3>Comparisons</h3>
+                <table class="table" id="comparison">
+                    <tr>
+                        <th>Parameter</th>
+                        <th>{{comp["name"][0]}}</th>
+                        <th>{{comp["name"][1]}}</th>
+                        <th>Δ</th>
+                    </tr>
+                    {% for field, values in comp.items() %}
+                    <tr class="comparison_row">
+                        <td class="key-col">{{field}}</td>
+                        <td class="val-col">{{values[0]}}</td>
+                        <td class="val-col">{{values[1]}}</td>
+                        <td class="val-col diff">{{values[2]}}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+        {% endblock %}
