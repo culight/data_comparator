@@ -14,6 +14,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 import json
 from pathlib import Path
 import time
+import pkg_resources
 
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -65,6 +66,7 @@ class MenuBar(QMenuBar):
         self.actionSwapDatasets = parent.actionSwapDatasets
         self.actionExportHTMLReport = parent.actionExportHTMLReport
         self.actionIncludeValidations = parent.actionIncludeValidations
+        self.actionAbout = parent.actionAbout
 
         # self.actionNew.triggered.connect(self.new)
         self.actionReset.triggered.connect(self.reset)
@@ -73,6 +75,7 @@ class MenuBar(QMenuBar):
         self.actionParquet.triggered.connect(self.export_to_parquet)
         self.actionJSON.triggered.connect(self.export_to_json)
         self.actionExportHTMLReport.triggered.connect(self.export_report)
+        self.actionAbout.triggered.connect(self.about)
 
     class ExportFile:
         def __init__(self, export_type, parent):
@@ -237,7 +240,7 @@ class MenuBar(QMenuBar):
             ds2 = comp_dict_proc["ds_name"][1]
             ds1_df = dc.get_dataset(ds1)
             ds2_df = dc.get_dataset(ds2)
-            
+
             comp_paramters["summary"][ds1] = ds1_df.get_summary()
             comp_paramters["summary"][ds2] = ds2_df.get_summary()
 
@@ -246,12 +249,20 @@ class MenuBar(QMenuBar):
                 comps=comp_paramters["comparisons"],
                 datasets=comp_paramters["summary"],
             )
-            
+
             f.write(html_output)
             f.close()
             webbrowser.open_new_tab(file_path)
         except Exception as e:
             LOGGER.error(str(e))
+
+    def about(self):
+        version = pkg_resources.require("data-comparator")[0].version
+        QMessageBox.about(
+            self,
+            "About Data Comparator",
+            "Version: {} \nAuthor: Demerrick J. Moton\n2021".format(version),
+        )
 
 
 class MainWindow(QMainWindow):
@@ -870,7 +881,6 @@ class MainWindow(QMainWindow):
 
 
 def main(*args, **kwargs):
-    import pkg_resources
 
     app = QApplication(sys.argv)
     app.setApplicationName("Data Comparator")

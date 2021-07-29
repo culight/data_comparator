@@ -20,3 +20,4 @@ dist/
 .parquet
 .avro
 .sas7bdat
+.json

@@ -37,8 +37,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>360</width>
-         <height>484</height>
+         <width>476</width>
+         <height>442</height>
         </rect>
        </property>
        <attribute name="label">
@@ -319,8 +319,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>360</width>
-         <height>484</height>
+         <width>490</width>
+         <height>442</height>
         </rect>
        </property>
        <attribute name="label">
@@ -654,7 +654,7 @@
      <x>0</x>
      <y>0</y>
      <width>631</width>
-     <height>18</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -690,7 +690,6 @@
      <string>Help</string>
     </property>
     <addaction name="actionAbout"/>
-    <addaction name="actionDocumentation"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuTools"/>
