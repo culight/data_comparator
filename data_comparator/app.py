@@ -881,6 +881,7 @@ class MainWindow(QMainWindow):
 
 
 def main(*args, **kwargs):
+    import pkg_resources
 
     app = QApplication(sys.argv)
     app.setApplicationName("Data Comparator")

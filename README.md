@@ -30,14 +30,18 @@ A command line interface and graphical user interface are provided.
 
 #### Command Line:
 
+**Run the following in a script:**
+
 ```
 import data_comparator.data_comparator as dc
 ```
 
 #### GUI:
 
+**Run the folllowing in a command line:**
+
 ```
-make run
+data_comparator
 ```
 
 ![gui data loading image](https://github.com/culight/data_comparator/blob/master/docs/examples/general1.png)
