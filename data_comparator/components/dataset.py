@@ -21,7 +21,7 @@ from .check import (
     check_temporal_column,
 )
 
-ACCEPTED_INPUT_FORMATS = [
+ACCEPTED_INPUT_FORMATS = (
     "sas7bdat",
     "csv",
     "parquet",
@@ -29,7 +29,7 @@ ACCEPTED_INPUT_FORMATS = [
     "pandas",
     "json",
     "txt",
-]
+)
 COMP_DIR = Path(__file__).parent
 VALID_FILE = str(COMP_DIR / "validations_config.json")
 
@@ -239,6 +239,15 @@ class Dataset(object):
                 cols_oftype[col_name] = col
 
         return cols_oftype
+    
+    def get_cols_bytype(self):
+        types = ("string", "numeric", "temporal", "boolean")
+
+        cols_bytype = {}
+        for type in types:
+            cols_bytype[type] = self.get_cols_oftype(type)
+        
+        return cols_bytype
 
 
 class Column(object):
