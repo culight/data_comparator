@@ -1,6 +1,7 @@
 # ignore test data
 test_data/
 prior_comparison/
+sandbox/
 
 # ignore ancillary stuff
 .vscode/
