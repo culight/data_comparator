@@ -40,7 +40,10 @@ def load_dataset(data_source, data_source_name: str = "", **load_params):
     Output:
         Resulting dataset collection
     """
-    assert data_source, "Data source not provided"
+    try:
+        assert type(data_source) != type(None)
+    except (NameError, AssertionError):
+        LOGGER.exception("Invalid data source provided")
 
     src = data_source
 
@@ -428,7 +431,7 @@ def clear_comparisons():
     LOGGER.info("Done clearing comparisons")
 
 
-def profile(column: Column):
+def profile_column(column: Column):
     """
     Performs summary of single column object
     Parameters:
@@ -441,6 +444,27 @@ def profile(column: Column):
     profile = profile_init.rename(columns={0: col_full})
 
     DATA_CUPBOARD.write_data("profile", col_full, profile)
+
+    return profile
+
+
+def profile_dataset(dataset: Dataset):
+    """
+    Performs summary of full dataset
+    Parameters:
+        dataset: Dataset object to profile
+    Outputs:
+        profile dataframe
+    """
+    cols_bytype = dataset.get_cols_bytype()
+    summary_dfs = []
+    for data_type, cols_oftype in cols_bytype.items():
+        for col_name, col in cols_oftype.items():
+            summ = col.get_summary()
+            summary_dfs.append(summ)
+    profile = pd.DataFrame(summary_dfs)
+
+    DATA_CUPBOARD.write_data("profile", dataset.name, profile)
 
     return profile
 
