@@ -21,3 +21,6 @@ dist/
 .avro
 .sas7bdat
 .json
+
+# ignore virtual env files
+*venv/
